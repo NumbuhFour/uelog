@@ -196,8 +196,10 @@ body.dock-dragging {
   
   .dock-wbox {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    left:0;
+    right:0;
+    top:0;
+    bottom:0;
   
     & > .dock-panel {
       border: none;
@@ -212,8 +214,10 @@ body.dock-dragging {
   
     & > .dock-box {
       position: absolute;
-      width: 100%;
-      height: 100%;
+      left:0;
+      right:0;
+      top:0;
+      bottom:0;
     }
   
     & > .dock-drop-indicator {
@@ -273,8 +277,10 @@ body.dock-dragging {
   
       &::before {
         position: absolute;
-        width: 100%;
-        height: 100%;
+        left:0;
+        right:0;
+        top:0;
+        bottom:0;
         display: block;
         line-height: 30px;
         text-align: center;
