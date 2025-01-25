@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 
 import { LogViewerLine } from "./LogViewerLine";
 import { LogViewerHeader } from "./LogViewerHeader";
+import { FixedSizeList as List } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 import "./LogViewer.scss";
 
@@ -10,7 +12,7 @@ let ConfigDefault = {
 }
 
 
-export const LogViewerPage = React.memo(({ globalConfig, lines }) => {
+export const LogViewerPage = ({ globalConfig, lines, extraMenus=[] }) => {
   const [config, setConfig] = useState(ConfigDefault);
 
   const setConfigAttribute = (attribute, value) => {
@@ -23,6 +25,7 @@ export const LogViewerPage = React.memo(({ globalConfig, lines }) => {
   }
 
   const menuConfig = [
+    ...extraMenus,
     {
       title: "Config",
       items: [
@@ -31,14 +34,29 @@ export const LogViewerPage = React.memo(({ globalConfig, lines }) => {
     },
   ];
 
+  
+  const Row = ({ index, key, style }) => (
+    //<div key={key} style={style} > LINE {index} </div>
+    <LogViewerLine style={style} config={{ ...globalConfig, ...config }} key={key} contentParts={lines[index]} />
+  )
+
   return (
     <div className="LogViewer">
       <LogViewerHeader menuConfig={menuConfig} />
       <div className="content">
-        {lines.map((line, index) => (
-          <LogViewerLine config={{ ...globalConfig, ...config }} key={index} contentParts={line} />
-        ))}
+        <AutoSizer>
+          {({ height, width }) => (
+          <List
+            height={height}
+            width={width}
+            itemCount={lines.length}
+            itemSize={15}
+          >
+            {Row}
+          </List>
+          )}
+        </AutoSizer>
       </div>
     </div>
   );
-});
+};

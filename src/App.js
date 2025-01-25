@@ -13,6 +13,8 @@ let groups = {
     floatable: true,
     tabLocked: false,
     closable: true,
+    newWindow: true,
+    maximizable: true,
   }
 };
 const GlobalConfigDefault = {
@@ -51,7 +53,8 @@ function App() {
       closable: true,
       content: (
         <LogViewerPage globalConfig={globalConfig} lines={parsedLines} />
-      )
+      ),
+      group: "default",
     }
 
     dockLayoutRef.current.dockMove(tab, "default_panel", "middle")

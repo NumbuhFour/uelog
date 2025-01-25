@@ -13,14 +13,15 @@ function GetVerbosityClass(verb) {
     return rtn ? rtn : "";
 }
 
-export const LogViewerLine = React.memo(({ config, contentParts }) => {
+export const LogViewerLine = ({ config, contentParts, style }) => {
 
     return (
         <div className={[
                 "line",
                 GetVerbosityClass(contentParts.verbosity),
+                contentParts.linenumber % 2 == 0 ? "even":"odd",
             ].join(' ')}
-            style={{ display: "flex" }}>
+            style={style}>
 
             { config.showLineNumber && <span className="number"> {contentParts.linenumber} </span> }
             <span className="text">
@@ -29,8 +30,8 @@ export const LogViewerLine = React.memo(({ config, contentParts }) => {
                 { ((contentParts.category) || config.debugLine) && (<><span className={["category", contentParts.category].join(' ')}>{contentParts.category}</span>: </>)}
                 { ((contentParts.verbosity) || config.debugLine) && (<><span className={["verbosity", contentParts.verbosity].join(' ')}>{contentParts.verbosity}</span>: </>)}
                 { ((contentParts.message) || config.debugLine) && (<span className="message">{contentParts.message}</span>)}
-                { (!contentParts.parseSuccess) && (<span className="parseError"> [PARSE ERROR]: {contentParts.fullText} </span>)}
+                { (!contentParts.parseSuccess) && (<span className="parseError"> [PARSE ERROR]: {JSON.stringify(contentParts.fulltext)} </span>)}
             </span>
         </div>
     );
-});
+};
