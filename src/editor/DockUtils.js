@@ -1,10 +1,10 @@
 import DockLayout from "rc-dock";
 
 function HasTab(ParentData, tabId) {
-    if (ParentData.tabs) {
+    if (ParentData?.tabs) {
         return ParentData.tabs.some(tab => tab.id == tabId)
     }
-    else if (ParentData.children) {
+    else if (ParentData?.children) {
         return ParentData.some(child => HasTab(child, tabId))
     }
     return false;
@@ -18,7 +18,7 @@ function GetPanelForTab_FromPanelBox(data, tabId) {
     if (data.tabs && HasTab(data, tabId)) return data;
     // We're a box and we have panels and boxes. Look through them recursively
     else if (data.children) {
-        for (let child of ParentData.children) {
+        for (let child of data.children) {
             const found = GetPanelForTab_FromPanelBox(child, tabId)
             if (found != undefined) return found;
         }
@@ -65,5 +65,12 @@ export function GetNeighboringPanels(panelData, mode="horizontal") {
         
         return panels.concat(singleBoxes)
     }
+    return [];
+}
+
+export function GetNeighboringPanelsForTab(layoutData, tabId, mode="horizontal") {
+    const panel = GetPanelForTab(layoutData, tabId)
+    if (panel)
+        return GetNeighboringPanels(panel, mode)
     return [];
 }

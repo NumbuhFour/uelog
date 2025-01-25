@@ -6,8 +6,9 @@ import { FixedSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 import "./LogViewer.scss";
-import { AllFilesContext, GlobalConfigContext } from "../GlobalContext";
+import { AllFilesContext, GlobalConfigContext, DockLayoutContext } from "../GlobalContext";
 import { LogViewerFiltersHeader, MatchesFilter } from "./LogViewerFiltersHeader";
+import { GetNeighboringPanelsForTab, GetPanelForTab } from "./DockUtils";
 
 let ConfigDefault = {
   debugLine: false,
@@ -19,6 +20,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   const [showFilters, setShowFilters] = useState(false);
   const globalConfigContext = useContext(GlobalConfigContext);
   const allFilesContext = useContext(AllFilesContext);
+  const dockLayoutContext = useContext(DockLayoutContext);
   const [ filters, setFilters ] = useState({ type: "root", children: [] });
   const listRef = useRef();
 
@@ -79,6 +81,23 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     if (listRef && listRef.current) listRef.current.forceUpdate()
   }, [lines]); 
 
+  const onScroll = (e) => {
+    const neighbors = GetNeighboringPanelsForTab(dockLayoutContext.getLayout(), id);
+    console.log("SCROLL", e.scrollOffset/15, neighbors)
+
+    if (neighbors)
+    for (var n of neighbors) {
+      if (n)
+      for (var t of n?.tabs) {
+        //t?.content?.test(123)
+        console.log("TAB", t.content)
+      }
+    }
+  }
+
+  /*this.prototype= {
+    test: (val)=>{console.log("GOOOO", id, val)}
+  }*/
 
   return (
     <>
@@ -93,6 +112,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
             width={width}
             itemCount={lines.length}
             itemSize={15}
+            onScroll={onScroll}
           >
             {Row}
           </List>

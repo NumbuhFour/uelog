@@ -83,20 +83,22 @@ function App() {
       title: file.name,
       closable: true,
       content: (
-        <AllFilesContext.Provider value={fileCollection}>
-          <LogViewerPage file={fileName} id={file.nextId} 
-            extraMenus={
-              [
-                {
-                  title: "Split",
-                  onClick: ()=>{
-                    addTabForFile(fileName)
+        <DockLayoutContext.Provider value={dockLayoutRef.current}>
+          <AllFilesContext.Provider value={fileCollection}>
+            <LogViewerPage file={fileName} id={file.name + "_" + file.nextId} 
+              extraMenus={
+                [
+                  {
+                    title: "Split",
+                    onClick: ()=>{
+                      addTabForFile(fileName)
+                    }
                   }
-                }
-              ]
-            }
-          />
-        </AllFilesContext.Provider>
+                ]
+              }
+            />
+          </AllFilesContext.Provider>
+        </DockLayoutContext.Provider>
       ),
       group: "default",
     }
@@ -174,11 +176,9 @@ function App() {
     <LogViewerHeader menuConfig={menuConfig} />
 
     <div className="tabContainer">
-      <DockLayoutContext.Provider value={dockLayoutRef.current}>
         <GlobalConfigContext.Provider value={globalConfig}>
           <DockLayout ref={dockLayoutRef} defaultLayout={defaultLayout} groups={groups}/>
       </GlobalConfigContext.Provider>
-      </DockLayoutContext.Provider>
     </div>
 
     </>
