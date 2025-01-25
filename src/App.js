@@ -84,7 +84,18 @@ function App() {
       closable: true,
       content: (
         <AllFilesContext.Provider value={fileCollection}>
-          <LogViewerPage file={fileName} id={file.nextId}/>
+          <LogViewerPage file={fileName} id={file.nextId} 
+            extraMenus={
+              [
+                {
+                  title: "Split",
+                  onClick: ()=>{
+                    addTabForFile(fileName)
+                  }
+                }
+              ]
+            }
+          />
         </AllFilesContext.Provider>
       ),
       group: "default",
