@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export const LogViewerHeader = ({ menuConfig }) => {
+export const LogViewerFiltersHeader = ({ filters, setFilters }) => {
     const [openMenuIndex, setOpenMenuIndex] = useState(null);
     const menuRef = useRef(null);
 
@@ -21,6 +21,13 @@ export const LogViewerHeader = ({ menuConfig }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    const menuConfig = [
+        {
+            title: "Filters",
+            children: [],
+        }
+    ]
 
     return (
         <div ref={menuRef} className="FileMenu">

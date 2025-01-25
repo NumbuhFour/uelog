@@ -55,9 +55,12 @@
                 background-color: $line-hover-bg;
             }
         }
+        .frame {
+            white-space: pre;
+        }
 
         .number {
-            width: 35px;
+            width: 30px;
             display: inline-block;
             text-align: right;
             margin-right: 10px;

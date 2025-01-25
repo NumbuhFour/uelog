@@ -26,7 +26,7 @@ export const LogViewerLine = ({ config, contentParts, style }) => {
             { config.showLineNumber && <span className="number"> {contentParts.linenumber} </span> }
             <span className="text">
                 { ((config.showTimestamp && contentParts.timestamp) || config.debugLine) && (<>[<span className="timestamp">{contentParts.timestamp}</span>]</>)}
-                { ((contentParts.frame) || config.debugLine) && (<>[<span className="frame">{contentParts.frame}</span>]</>)}
+                { ((config.showFrame && contentParts.frame) || config.debugLine) && (<>[<span className="frame">{contentParts.frame?.trim().toString().padStart(3,' ')}</span>]</>)}
                 { ((contentParts.category) || config.debugLine) && (<><span className={["category", contentParts.category].join(' ')}>{contentParts.category}</span>: </>)}
                 { ((contentParts.verbosity) || config.debugLine) && (<><span className={["verbosity", contentParts.verbosity].join(' ')}>{contentParts.verbosity}</span>: </>)}
                 { ((contentParts.message) || config.debugLine) && (<span className="message">{contentParts.message}</span>)}

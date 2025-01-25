@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext, createContext } from "react";
 import {DockLayout} from 'rc-dock';
 import { LogViewerPage } from './editor/LogViewerPage';
 import { parseLine } from "./editor/Parser";
@@ -6,6 +6,7 @@ import { LogViewerHeader } from "./editor/LogViewerHeader";
 import "./App.scss";
 
 import "./editor/LogViewer.scss";
+import { AllFilesContext, DockLayoutContext, GlobalConfigContext, MyFilesContext } from "./GlobalContext";
 
 
 let groups = {
@@ -20,14 +21,42 @@ let groups = {
 const GlobalConfigDefault = {
   showLineNumber: true,
   showTimestamp: true,
+  showFrame: true,
 }
+
 
 function App() {
   const dockLayoutRef = useRef(null);
   const [globalConfig, setGlobalConfig] = useState(GlobalConfigDefault)
-  const [lines, setLines] = useState([]);
   const inputRef = useRef(null);
   const [lastDirectory, setLastDirectory] = useState('');
+
+
+  const [fileCollection, setFileCollection] = useState({})
+
+  const AddFile = (file, parsedLines)  => {
+    setFileCollection(old => {
+      old[file.name] = {
+        name: file.name,
+        lines: parsedLines,
+        nextId: 0,
+      };
+      return old;
+    })
+  }
+  const UpdateFile = (file, parsedLines) => {
+
+    setFileCollection(old => {
+      const prevEntry = old[file.name]
+      prevEntry.lines = parsedLines;
+      old[file.name] = prevEntry;
+      return old;
+    })
+  }
+
+  const FileExists = (fileName) => {
+    return fileName in fileCollection
+  }
 
   const setConfigAttribute = (attribute, value) => {
     setGlobalConfig(prevConfig => 
@@ -46,16 +75,22 @@ function App() {
     }
   }, []);
 
-  const addTabForFile = (file, parsedLines) => {
+  const addTabForFile = (fileName) => {
+    const file = fileCollection[fileName];
+
     const tab = {
-      id: file.name,
+      id: file.name + "_" + file.nextId,
       title: file.name,
       closable: true,
       content: (
-        <LogViewerPage globalConfig={globalConfig} lines={parsedLines} />
+        <AllFilesContext.Provider value={fileCollection}>
+          <LogViewerPage file={fileName} id={file.nextId}/>
+        </AllFilesContext.Provider>
       ),
       group: "default",
     }
+
+    file.nextId++;
 
     dockLayoutRef.current.dockMove(tab, "default_panel", "middle")
   }
@@ -70,15 +105,20 @@ function App() {
         setLastDirectory(directory);
         localStorage.setItem('lastDirectory', directory);
       }
-
+      
       // Open file
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target.result;
         const linesArray = text.split("\n").map((line, ind) => parseLine(line, ind));
-        setLines(linesArray);
-        console.log("GOT LINES", file.name)
-        addTabForFile(file, linesArray);
+        
+        if (FileExists(file.name)) {
+          UpdateFile(file, linesArray);
+        }
+        else {
+          AddFile(file, linesArray)
+          addTabForFile(file.name);
+        }
       };
       reader.readAsText(file);
     }
@@ -102,8 +142,9 @@ function App() {
     {
       title: "Config",
       items: [
-        { label: <span>Show Line Numbers: {globalConfig.showLineNumber ? "1":"0"}</span>, action: () => { setConfigAttribute('showLineNumber', !globalConfig.showLineNumber); return true; } },
-        { label: <span>Show Timestamp: {globalConfig.showTimestamp ? "1":"0"}</span>, action: () => { setConfigAttribute('showTimestamp', !globalConfig.showTimestamp); return true; } },
+        { label: <span>{globalConfig.showLineNumber ? "☑":"☐"} Show Line Numbers</span>, action: () => { setConfigAttribute('showLineNumber', !globalConfig.showLineNumber); return true; } },
+        { label: <span>{globalConfig.showTimestamp ? "☑":"☐"} Show Timestamp</span>, action: () => { setConfigAttribute('showTimestamp', !globalConfig.showTimestamp); return true; } },
+        { label: <span>{globalConfig.showFrame ? "☑":"☐"} Show Frame Numbers</span>, action: () => { setConfigAttribute('showFrame', !globalConfig.showFrame); return true; } },
       ],
     },
   ];
@@ -122,7 +163,11 @@ function App() {
     <LogViewerHeader menuConfig={menuConfig} />
 
     <div className="tabContainer">
-      <DockLayout ref={dockLayoutRef} defaultLayout={defaultLayout} groups={groups}/>
+      <DockLayoutContext.Provider value={dockLayoutRef.current}>
+        <GlobalConfigContext.Provider value={globalConfig}>
+          <DockLayout ref={dockLayoutRef} defaultLayout={defaultLayout} groups={groups}/>
+      </GlobalConfigContext.Provider>
+      </DockLayoutContext.Provider>
     </div>
 
     </>
