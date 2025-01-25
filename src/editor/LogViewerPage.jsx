@@ -10,7 +10,7 @@ let ConfigDefault = {
 }
 
 
-export const LogViewerPage = ({ globalConfig, lines }) => {
+export const LogViewerPage = React.memo(({ globalConfig, lines }) => {
   const [config, setConfig] = useState(ConfigDefault);
 
   const setConfigAttribute = (attribute, value) => {
@@ -36,9 +36,9 @@ export const LogViewerPage = ({ globalConfig, lines }) => {
       <LogViewerHeader menuConfig={menuConfig} />
       <div className="content">
         {lines.map((line, index) => (
-          <LogViewerLine config={{ ...globalConfig, ...config }} key={index} number={index + 1} contentParts={line} />
+          <LogViewerLine config={{ ...globalConfig, ...config }} key={index} contentParts={line} />
         ))}
       </div>
     </div>
   );
-};
+});

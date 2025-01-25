@@ -44,6 +44,19 @@ function App() {
     }
   }, []);
 
+  const addTabForFile = (file, parsedLines) => {
+    const tab = {
+      id: file.name,
+      title: file.name,
+      closable: true,
+      content: (
+        <LogViewerPage globalConfig={globalConfig} lines={parsedLines} />
+      )
+    }
+
+    dockLayoutRef.current.dockMove(tab, "default_panel", "middle")
+  }
+
   const handleFileOpen = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -59,8 +72,10 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target.result;
-        const linesArray = text.split("\n").map(parseLine);
+        const linesArray = text.split("\n").map((line, ind) => parseLine(line, ind));
         setLines(linesArray);
+        console.log("GOT LINES", file.name)
+        addTabForFile(file, linesArray);
       };
       reader.readAsText(file);
     }
@@ -93,17 +108,8 @@ function App() {
   const defaultLayout = {
     dockbox: {
       mode: 'vertical',
-      children: [
-        {
-          tabs: [
-            {
-              id: 'id3', title: 'Editor', content: (
-                  <LogViewerPage globalConfig={globalConfig} lines={lines} />
-              )
-            },
-          ],
-        },
-      ]
+      id: "default_panel",
+      children: []
     }
   };
 

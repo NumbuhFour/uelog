@@ -13,7 +13,7 @@ function GetVerbosityClass(verb) {
     return rtn ? rtn : "";
 }
 
-export const LogViewerLine = ({ config, number, contentParts }) => {
+export const LogViewerLine = React.memo(({ config, contentParts }) => {
 
     return (
         <div className={[
@@ -22,7 +22,7 @@ export const LogViewerLine = ({ config, number, contentParts }) => {
             ].join(' ')}
             style={{ display: "flex" }}>
 
-            { config.showLineNumber && <span className="number"> {number} </span> }
+            { config.showLineNumber && <span className="number"> {contentParts.linenumber} </span> }
             <span className="text">
                 { ((config.showTimestamp && contentParts.timestamp) || config.debugLine) && (<>[<span className="timestamp">{contentParts.timestamp}</span>]</>)}
                 { ((contentParts.frame) || config.debugLine) && (<>[<span className="frame">{contentParts.frame}</span>]</>)}
@@ -33,4 +33,4 @@ export const LogViewerLine = ({ config, number, contentParts }) => {
             </span>
         </div>
     );
-};
+});
