@@ -7,7 +7,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 
 import "./LogViewer.scss";
 import { AllFilesContext, GlobalConfigContext } from "../GlobalContext";
-import { LogViewerFiltersHeader } from "./LogViewerFiltersHeader";
+import { LogViewerFiltersHeader, MatchesFilter } from "./LogViewerFiltersHeader";
 
 let ConfigDefault = {
   debugLine: false,
@@ -19,6 +19,11 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   const [showFilters, setShowFilters] = useState(false);
   const globalConfigContext = useContext(GlobalConfigContext);
   const allFilesContext = useContext(AllFilesContext);
+  const [ filters, setFilters ] = useState({ type: "root", children: [] });
+  const listRef = useRef();
+
+  
+  const [ lines, setLines ] = useState( allFilesContext[file].lines );
 
   const setConfigAttribute = (attribute, value) => {
     setConfig(prevConfig => 
@@ -49,7 +54,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   
   const Row = ({ index, key, style }) => (
     //<div key={key} style={style} > LINE {index} </div>
-    <LogViewerLine style={style} config={{ ...globalConfigContext, ...config }} key={key} contentParts={allFilesContext[file].lines[index]} />
+    <LogViewerLine style={style} config={{ ...globalConfigContext, ...config }} key={key} contentParts={lines[index]} />
   )
 
   /*const longestLine = lines.reduce((acc,iter) => {
@@ -58,18 +63,35 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   }, 0);
   console.log("Longest", longestLine)*/
 
+  const UpdateFilters = (val) => {
+    //console.log("EVALUATING FILTERS")
+    setFilters(val);
+    //console.log("EVALUATING FILTERS num ", lines.length, filters, lines)
+
+  }
+  useEffect(() => {
+    setLines(allFilesContext[file].lines.filter((line) => {
+      return MatchesFilter(line, filters);
+    }))
+  }, [filters]);
+
+  useEffect(() => {
+    if (listRef && listRef.current) listRef.current.forceUpdate()
+  }, [lines]); 
+
+
   return (
     <>
       <LogViewerHeader menuConfig={menuConfig} />
-      { showFilters && <LogViewerFiltersHeader /> }
+      { showFilters && <LogViewerFiltersHeader conditionTree={filters} setConditionTree={UpdateFilters} /> }
     <div className="LogViewer">
       <div className="content">
         <AutoSizer>
           {({ height, width }) => (
-          <List
+          <List ref={listRef}
             height={height}
             width={width}
-            itemCount={allFilesContext[file].lines.length}
+            itemCount={lines.length}
             itemSize={15}
           >
             {Row}

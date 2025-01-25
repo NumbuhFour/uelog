@@ -1,6 +1,187 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export const LogViewerFiltersHeader = ({ filters, setFilters }) => {
+const CompositeTypes = [
+    'and',
+    'or',
+    'root',
+    'not',
+]
+
+const IsTypeComposite = (type) => CompositeTypes.includes(type)
+
+const ConditionNames = {
+    'root': '',
+    'empty': '',
+    'and': 'AND',
+    'or': 'OR',
+    'not': 'NOT',
+    'categoryIncludes': 'Category Includes',
+    'textIncludes': 'Text Includes',
+    'messageIncludes': 'Message Includes',
+    'textMatch': 'Text Matches Regex',
+}
+const ConditionOptions = [
+    'and',
+    'or',
+    'not',
+    'categoryIncludes',
+    'textIncludes',
+    'messageIncludes',
+    'textMatch',
+]
+
+export function MatchesFilter(contentParts, filter) {
+    //console.log("MATCH CHECK ", contentParts, filter)
+    if (filter == undefined) {
+        //console.log("NO FILTER")
+        return true;
+    }
+    switch(filter.type) {
+        case 'root':
+            //console.log("ROOT")
+        case 'and':
+            //console.log('MATCH and')
+            return filter.children.length == 0 || filter.children.every(i => MatchesFilter(contentParts, i))
+        case 'or':
+            //console.log('MATCH or')
+            return filter.children.length == 0 || filter.children.some(i => MatchesFilter(contentParts, i))
+        case 'not':
+            //console.log('MATCH not')
+            return filter.children.length == 0 || !filter.children.every(i => MatchesFilter(contentParts, i))
+        case 'categoryIncludes':
+            //console.log("Include check: ", filter.value, contentParts.category, contentParts.category?.toLowerCase().includes(filter.value.toLowerCase()))
+            return filter.value == '' || contentParts.category?.toLowerCase().includes(filter.value.toLowerCase())
+        case 'textIncludes':
+            //console.log('MATCH textIncludes')
+            return filter.value == '' || contentParts.fulltext?.toLowerCase().includes(filter.value.toLowerCase())
+        case 'textMatch': // Regex match full text
+        //console.log('MATCH textMatch')
+            return filter.value == '' || contentParts.fulltext.match(new RegExp(filter.value)) != null
+        case 'messageIncludes':
+            //console.log('MATCH messageIncludes')
+            return filter.value == '' || contentParts.message?.toLowerCase().includes(filter.value.toLowerCase())
+        default:
+            //console.log("NO FILTER??", filter.type)
+            return true;
+    }
+    console.log("WHAT???", filter)
+}
+
+const ConditionNode = ({ node, updateNode, removeNode }) => {
+    const [ showDropdown, setShowDropdown ] = useState(true)
+    const dropdownRef = useRef();
+    const addRef = useRef();
+
+    const addCondition = (type) => {
+        const newCondition = { type, children:[], value: ''};
+        updateNode((prev) => ({
+            ...prev,
+            children: [...(prev.children || []), newCondition],
+        }))
+        setShowDropdown(false);
+
+    }
+
+    const updateValue = (value) => {
+        updateNode((prev) => ({
+            ...prev,
+            value,
+        }))
+    }
+
+    const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target) && event.target != addRef.current) {
+          setShowDropdown(false);
+          console.log('undo')
+        }
+      };
+    React.useEffect(() => {
+      document.addEventListener("click", handleClickOutside);
+      return () => {
+        document.removeEventListener("click", handleClickOutside);
+      };
+    }, []);
+
+    return (
+        <div className="node">
+            <span className="title"> {ConditionNames[node.type]} </span>
+            {!IsTypeComposite(node.type) && (
+                <span>
+                    <input
+                        type="text"
+                        placeholder="Enter text"
+                        value={node.value || ""}
+                        onChange={(e) => updateValue(e.target.value)}
+                    />
+                </span>
+            )}
+            {node.type !== 'root' && (
+                <>
+                    <button onClick={removeNode}>X</button>
+                </>
+            )}
+
+            {IsTypeComposite(node.type) && (
+                <>
+                    <div style={{marginLeft:"10px"}} >
+                    
+                    {node.children &&
+                    node.children.map((child, index) => (
+                        <ConditionNode
+                        key={index}
+                        node={child}
+                        removeNode={() => {
+                            updateNode((prev) => ({
+                                ...prev,
+                                children: prev.children.filter((_, i) => i !== index)
+                            }))
+                        }}
+                        updateNode={(updater) =>
+                            updateNode((prev) => {
+                            const newChildren = [...prev.children];
+                            newChildren[index] = updater(newChildren[index]);
+                            return { ...prev, children: newChildren };
+                            })
+                        }
+                        />
+                    ))}
+
+                    {
+                        (node.type != 'not' || node.children.length == 0) &&
+                        (<>
+                            <button ref={addRef} onClick={() => {console.log("DROPDOWN GO", showDropdown); setShowDropdown(!showDropdown) }}> +Add </button>
+                        </>)
+                    }
+
+                    {showDropdown && (
+                    <div
+                        ref={dropdownRef}
+                        style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        background: "white",
+                        border: "1px solid #ccc",
+                        boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                        zIndex: 10,
+                        }}
+                    >
+                        {ConditionOptions.map(opt => (
+                            <>
+                                <button onClick={() => addCondition(opt)}>{ConditionNames[opt]}</button>
+                            </>
+                        ))}
+                    </div>
+                    )}
+                    </div>
+                </>
+            )}
+        </div>
+    )
+}
+
+export const LogViewerFiltersHeader = ({ conditionTree, setConditionTree }) => {
+  
     const [openMenuIndex, setOpenMenuIndex] = useState(null);
     const menuRef = useRef(null);
 
@@ -31,35 +212,12 @@ export const LogViewerFiltersHeader = ({ filters, setFilters }) => {
 
     return (
         <div ref={menuRef} className="FileMenu">
-            {menuConfig.map((menu, index) => (
-                <div key={index} style={{ position: "relative" }}>
-                    <span
-                        className="title"
-                        onClick={() => {
-                            if (menu.onClick) menu.onClick(index)
-                            else toggleMenu(index)}
-                        }
-                    >
-                        {menu.title}
-                    </span>
-                    {openMenuIndex === index && menu.items && (
-                        <div className="menu">
-                            {menu.items.map((item, idx) => (
-                                <div className="option"
-                                    key={idx}
-                                    style={{
-                                        padding: "5px 10px",
-                                        cursor: "pointer",
-                                    }}
-                                    onClick={(e)=>{if (!item.action(e)) setOpenMenuIndex(null)}}
-                                >
-                                    {item.label}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            ))}
+            <ConditionNode
+                node={conditionTree}
+                updateNode={(updater) => {
+                    setConditionTree(updater(conditionTree))
+                }}
+            />
         </div>
     );
 };

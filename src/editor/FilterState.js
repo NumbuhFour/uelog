@@ -2,9 +2,9 @@
 export function MatchesFilter(contentParts, filter) {
     switch(filter.type) {
         case 'and':
-            return filter.value.every(i => MatchesFilter(contentParts, i))
+            return filter.children.every(i => MatchesFilter(contentParts, i))
         case 'or':
-            return filter.value.some(i => MatchesFilter(contentParts, i))
+            return filter.children.some(i => MatchesFilter(contentParts, i))
         case 'categoryIncludes':
             return contentParts.category?.toLowerCase().includes() == filter.value.toLowerCase()
         case 'textIncludes':
