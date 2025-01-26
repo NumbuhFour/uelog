@@ -15,6 +15,7 @@ const ConditionNames = {
     'and': 'AND',
     'or': 'OR',
     'not': 'NOT',
+    'category': 'Category',
     'categoryIncludes': 'Category Includes',
     'textIncludes': 'Text Includes',
     'messageIncludes': 'Message Includes',
@@ -24,6 +25,7 @@ const ConditionOptions = [
     'and',
     'or',
     'not',
+    'category',
     'categoryIncludes',
     'textIncludes',
     'messageIncludes',
@@ -48,6 +50,9 @@ export function MatchesFilter(contentParts, filter) {
         case 'not':
             //console.log('MATCH not')
             return filter.children.length == 0 || !filter.children.every(i => MatchesFilter(contentParts, i))
+        case 'category':
+            //console.log("Include check: ", filter.value, contentParts.category, contentParts.category?.toLowerCase().includes(filter.value.toLowerCase()))
+            return filter.value == '' || contentParts.category?.toLowerCase() == filter.value.toLowerCase()
         case 'categoryIncludes':
             //console.log("Include check: ", filter.value, contentParts.category, contentParts.category?.toLowerCase().includes(filter.value.toLowerCase()))
             return filter.value == '' || contentParts.category?.toLowerCase().includes(filter.value.toLowerCase())
@@ -67,7 +72,7 @@ export function MatchesFilter(contentParts, filter) {
     console.log("WHAT???", filter)
 }
 
-const ConditionNode = ({ node, updateNode, removeNode }) => {
+const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
     const [ showDropdown, setShowDropdown ] = useState(true)
     const dropdownRef = useRef();
     const addRef = useRef();
@@ -102,17 +107,43 @@ const ConditionNode = ({ node, updateNode, removeNode }) => {
       };
     }, []);
 
-    return (
-        <div className="node">
-            <span className="title"> {ConditionNames[node.type]} </span>
-            {!IsTypeComposite(node.type) && (
-                <span>
-                    <input
+    console.log("FILTERS CATS???", logCategories)
+
+    let NodeInput;
+    if (node.type == "category") {
+        NodeInput = <select name="verbosity" onChange={(e) => updateValue(e.target.value)}>
+                        { logCategories.map(cat => (
+                            <option value={cat}> {cat} </option>
+                        )) }
+                    </select>
+    }
+    else if (node.type == "verbosity") {
+        NodeInput = <select name="verbosity" onChange={(e) => updateValue(e.target.value)}>
+                        <option value="fatal"> Fatal </option>
+                        <option value="error"> Error </option>
+                        <option value="warning"> Warning </option>
+                        <option value="display"> Display </option>
+                        <option value="log"> Log </option>
+                        <option value="verbose"> Verbose </option>
+                        <option value="veryverbose"> Very Verbose </option>
+                    </select>
+    }
+    else if (!IsTypeComposite(node.type)) {
+        NodeInput = <input
                         type="text"
                         placeholder="Enter text"
                         value={node.value || ""}
                         onChange={(e) => updateValue(e.target.value)}
                     />
+    }
+
+
+    return (
+        <div className="node">
+            <span className="title"> {ConditionNames[node.type]} </span>
+            {!IsTypeComposite(node.type) && (
+                <span>
+                    {NodeInput}
                 </span>
             )}
             {node.type !== 'root' && (
@@ -128,6 +159,7 @@ const ConditionNode = ({ node, updateNode, removeNode }) => {
                     {node.children &&
                     node.children.map((child, index) => (
                         <ConditionNode
+                        logCategories={logCategories}
                         key={index}
                         node={child}
                         removeNode={() => {
@@ -180,7 +212,7 @@ const ConditionNode = ({ node, updateNode, removeNode }) => {
     )
 }
 
-export const LogViewerFiltersHeader = ({ conditionTree, setConditionTree }) => {
+export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setConditionTree }) => {
   
     const [openMenuIndex, setOpenMenuIndex] = useState(null);
     const menuRef = useRef(null);
@@ -213,6 +245,7 @@ export const LogViewerFiltersHeader = ({ conditionTree, setConditionTree }) => {
     return (
         <div ref={menuRef} className="FileMenu">
             <ConditionNode
+                logCategories={logCategories}
                 node={conditionTree}
                 updateNode={(updater) => {
                     setConditionTree(updater(conditionTree))

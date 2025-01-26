@@ -12,6 +12,31 @@ import { GetNeighboringPanelsForTab, GetPanelForTab } from "./DockUtils";
 
 let ConfigDefault = {
   debugLine: false,
+  syncScroll: true,
+}
+
+const StatisticsTitles = {
+  lines_total:"Total Lines",
+  lines_match:"Matching Lines",
+  errors_total:"Errors (total)",
+  errors_match:"Errors (matching)",
+  warnings_total:"Warnings (total)",
+  warnings_match:"Warnings (matching)",
+} 
+
+const StatisticKeys_categories = [
+  "lines",
+  "errors",
+  "warnings",
+]
+
+const StatisticsDefault = {
+  lines_total: 0,
+  lines_match: 0,
+  errors_total: 0,
+  errors_match: 0,
+  warnings_total: 0,
+  warnings_match: 0,
 }
 
 
@@ -24,6 +49,12 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   const [ filters, setFilters ] = useState({ type: "root", children: [] });
   const listRef = useRef();
 
+  const [ logCategories, setLogCategories ] = useState([]);
+  const [ statistics, setStatistics ] = useState(StatisticsDefault);
+  const [ logCategoryStats, setLogCategoryStats ] = useState({});
+
+  let forceMove = false;
+
   
   const [ lines, setLines ] = useState( allFilesContext[file].lines );
 
@@ -35,6 +66,10 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       return out
     })
   }
+  useEffect(() => {
+    if (dockLayoutContext.getLayout())
+      dockLayoutContext.find(id)['NeighborScroll'] = NeighborScroll;
+  }, [config])
 
   const toggleFilters = () => {
     setShowFilters(!showFilters)
@@ -45,15 +80,26 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     {
       title: "Config",
       items: [
+        { label: <span> {config.syncScroll ? "☑":"☐"} Sync Scrolling with Neighbors </span>, action: () => { setConfigAttribute('syncScroll', !config.syncScroll); return true; } },
         { label: <span> {config.debugLine ? "☑":"☐"} Line Debug </span>, action: () => { setConfigAttribute('debugLine', !config.debugLine); return true; } },
       ],
+    },
+    {
+      title: "Statistics",
+      items:
+      StatisticKeys_categories.map((stat) => 
+              ({ label: (<span className={['statistic', stat + "_total"].join(' ')}><label>{StatisticsTitles[stat + "_total"]}</label>: <span className="value">{statistics[stat + "_total"]}</span></span>), action: ()=>{} })
+      ).concat(
+      filters.children.length > 0 ? StatisticKeys_categories.map((stat) => 
+        ({ label: (<span className={['statistic', stat + "_match"].join(' ')}><label>{StatisticsTitles[stat + "_match"]}</label>: <span className="value">{statistics[stat + "_match"]}</span></span>), action: ()=>{} })
+      ):[]),
     },
     {
       title: "Filters",
       onClick: toggleFilters,
     }
   ];
-  
+
   const Row = ({ index, key, style }) => (
     //<div key={key} style={style} > LINE {index} </div>
     <LogViewerLine style={style} config={{ ...globalConfigContext, ...config }} key={key} contentParts={lines[index]} />
@@ -71,38 +117,130 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     //console.log("EVALUATING FILTERS num ", lines.length, filters, lines)
 
   }
+
+  const PopulateLogCategories = () => {
+    let logCategoryCounts = {}
+
+    allFilesContext[file].lines.forEach((line) => {
+      if (line.category) {
+        if (!(line.category in logCategoryCounts)) logCategoryCounts[line.category] = 0
+        logCategoryCounts[line.category]++
+      }
+    });
+
+    setLogCategoryStats(logCategoryCounts)
+    setLogCategories([''].concat(Object.keys(logCategoryCounts).sort()))
+  }
+
   useEffect(() => {
-    setLines(allFilesContext[file].lines.filter((line) => {
-      return MatchesFilter(line, filters);
-    }))
+
+    let concatenationInd = 0;
+    let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
+    setLines(allFilesContext[file].lines.reduce((acc, line, ind) => {
+
+      const matches = MatchesFilter(line, filters);
+        
+      if (line.verbosity == "Warning") {
+        statisticsCopy.warnings_total++;
+        if (matches) statisticsCopy.warnings_match++;
+      }
+      if (line.verbosity == "Error" || line.verbosity == "Fatal") {
+        statisticsCopy.errors_total++;
+        if (matches) statisticsCopy.errors_match++;
+      }
+
+      if (matches) {
+        
+
+        const delta = ind - concatenationInd;
+        if (delta > 1) {
+          acc.push({
+            type:"concat",
+            numlines: delta
+          })
+        }
+        acc.push(line)
+        concatenationInd = line.linenumber
+      }
+      return acc;
+    }, []))
+
+    statisticsCopy.lines_total = allFilesContext[file].lines.length;
+    statisticsCopy.lines_match = lines.length;
+    setStatistics(statisticsCopy);
+
+    PopulateLogCategories();
+
   }, [filters]);
 
   useEffect(() => {
     if (listRef && listRef.current) listRef.current.forceUpdate()
+
+    PopulateLogCategories();
+    console.log("Categories updated: ", logCategories)
+
   }, [lines]); 
 
+
   const onScroll = (e) => {
+    if (e.scrollUpdateWasRequested) return;
+    if (forceMove)  {
+      return;
+    }
+    if (!config.syncScroll) return;
+
     const neighbors = GetNeighboringPanelsForTab(dockLayoutContext.getLayout(), id);
-    console.log("SCROLL", e.scrollOffset/15, neighbors)
+    const ind = Math.floor(e.scrollOffset/15) + 15
+    const line = lines[ind]
 
     if (neighbors)
-    for (var n of neighbors) {
-      if (n)
-      for (var t of n?.tabs) {
-        //t?.content?.test(123)
-        console.log("TAB", t.content)
+      for (var n of neighbors) {
+        if (n)
+        for (var t of n?.tabs) {
+          //t?.content?.test(123)
+          console.log(id, "Scroll detected", line.linenumber, e)
+          if (t.file == file && t?.NeighborScroll)
+          {
+            t.NeighborScroll(line)
+          }
+        }
       }
-    }
   }
 
   /*this.prototype= {
     test: (val)=>{console.log("GOOOO", id, val)}
   }*/
 
+  const NeighborScroll = (targetLine) => {
+    if (!config.syncScroll) return;
+
+    forceMove = true;
+    let scrollIndex  = 0;
+    for (let i in lines) {
+      const line = lines[i];
+      if (line.linenumber < targetLine.linenumber) scrollIndex = i;
+      else {
+        if (line.linenumber == targetLine.linenumber) scrollIndex = i;
+        else {
+        }
+        break;
+      }
+    }
+    
+    console.log("Scrolling FORCE", config, id,  targetLine.linenumber, scrollIndex - 15)
+    listRef.current.scrollToItem(scrollIndex - 15, "start")
+    forceMove = false;
+    //listRef.current.forceUpdate();
+  }
+  useEffect(() => {
+    if (dockLayoutContext.getLayout())
+      dockLayoutContext.find(id)['NeighborScroll'] = NeighborScroll;
+  }, [])
+
   return (
     <>
       <LogViewerHeader menuConfig={menuConfig} />
-      { showFilters && <LogViewerFiltersHeader conditionTree={filters} setConditionTree={UpdateFilters} /> }
+      { showFilters && <LogViewerFiltersHeader logCategories={logCategories} conditionTree={filters} setConditionTree={UpdateFilters} /> }
     <div className="LogViewer">
       <div className="content">
         <AutoSizer>

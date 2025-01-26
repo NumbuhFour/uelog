@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "cra-template": "1.2.0",
+    "moment": "^2.30.1",
     "rc-dock": "^3.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

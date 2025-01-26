@@ -7,6 +7,7 @@ import "./App.scss";
 
 import "./editor/LogViewer.scss";
 import { AllFilesContext, DockLayoutContext, GlobalConfigContext, MyFilesContext } from "./GlobalContext";
+import { GetPanelForTab } from "./editor/DockUtils";
 
 
 let groups = {
@@ -21,13 +22,20 @@ let groups = {
 const GlobalConfigDefault = {
   showLineNumber: true,
   showTimestamp: true,
+  timestampAsDelta: false,
   showFrame: true,
+  dragEdges: false,
+  colorCategories: true,
+  contrastMessage: true,
 }
 
 
 function App() {
   const dockLayoutRef = useRef(null);
-  const [globalConfig, setGlobalConfig] = useState(GlobalConfigDefault)
+  let configDefault = GlobalConfigDefault
+  const existingConfig = JSON.parse(localStorage.getItem('storedConfig'))
+  if (existingConfig) configDefault = existingConfig;
+  const [globalConfig, setGlobalConfig] = useState(configDefault)
   const inputRef = useRef(null);
   const [lastDirectory, setLastDirectory] = useState('');
 
@@ -66,6 +74,10 @@ function App() {
       return out
     })
   }
+  useEffect(() => {
+    localStorage.setItem('storedConfig', JSON.stringify(globalConfig));
+    console.log("update conifg", localStorage.getItem('storedConfig'))
+  }, [globalConfig]);
 
   // Grab the directory used last time, saved to local storage
   useEffect(() => {
@@ -73,25 +85,34 @@ function App() {
     if (storedDirectory) {
       setLastDirectory(storedDirectory);
     }
+    
+    const storedConfig = localStorage.getItem('storedConfig');
+    if (storedConfig) {
+      setGlobalConfig(JSON.parse(storedConfig));
+    }
   }, []);
 
-  const addTabForFile = (fileName) => {
-    const file = fileCollection[fileName];
 
+  const makeLogTab = (fileName) => {
+    const file = fileCollection[fileName];
+    
+    const id = file.name + "_" + file.nextId;
     const tab = {
-      id: file.name + "_" + file.nextId,
+      id: id,
       title: file.name,
+      file: file.name,
       closable: true,
+      cached: true,
       content: (
         <DockLayoutContext.Provider value={dockLayoutRef.current}>
           <AllFilesContext.Provider value={fileCollection}>
-            <LogViewerPage file={fileName} id={file.name + "_" + file.nextId} 
+            <LogViewerPage file={fileName} id={id} 
               extraMenus={
                 [
                   {
                     title: "Split",
                     onClick: ()=>{
-                      addTabForFile(fileName)
+                      splitTab(fileName, id)
                     }
                   }
                 ]
@@ -104,8 +125,19 @@ function App() {
     }
 
     file.nextId++;
+    return tab;
+  }
 
-    dockLayoutRef.current.dockMove(tab, "default_panel", "middle")
+  const splitTab = (fileName, tabId) => {
+    const tab = makeLogTab(fileName);
+
+    dockLayoutRef.current.dockMove(tab, tabId, "after-tab")
+  }
+
+  const addTabForFile = (fileName) => {
+    const tab = makeLogTab(fileName);
+
+    dockLayoutRef.current.dockMove(tab, dockLayoutRef.current.getLayout().dockbox, "middle")
   }
 
   const handleFileOpen = (event) => {
@@ -123,10 +155,18 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target.result;
-        const linesArray = text.split("\n").map((line, ind) => parseLine(line, ind));
+        let earliestTime = undefined
+        const linesArray = text.split("\n").map((line, ind) => {
+          const out = parseLine(line, ind, earliestTime)
+          if (out.datetime && !earliestTime) {
+            earliestTime = out.datetime
+          }
+          return out
+        });
         
         if (FileExists(file.name)) {
           UpdateFile(file, linesArray);
+          addTabForFile(file.name);
         }
         else {
           AddFile(file, linesArray)
@@ -155,16 +195,20 @@ function App() {
     {
       title: "Config",
       items: [
+        { label: <span>{globalConfig.dragEdges ? "☑":"☐"} Drag To Edges </span>, action: () => { setConfigAttribute('dragEdges', !globalConfig.dragEdges); return true; } },
         { label: <span>{globalConfig.showLineNumber ? "☑":"☐"} Show Line Numbers</span>, action: () => { setConfigAttribute('showLineNumber', !globalConfig.showLineNumber); return true; } },
         { label: <span>{globalConfig.showTimestamp ? "☑":"☐"} Show Timestamp</span>, action: () => { setConfigAttribute('showTimestamp', !globalConfig.showTimestamp); return true; } },
+        { label: <span>{globalConfig.timestampAsDelta ? "☑":"☐"} Timestamp as from Start</span>, action: () => { setConfigAttribute('timestampAsDelta', !globalConfig.timestampAsDelta); return true; } },
         { label: <span>{globalConfig.showFrame ? "☑":"☐"} Show Frame Numbers</span>, action: () => { setConfigAttribute('showFrame', !globalConfig.showFrame); return true; } },
+        { label: <span>{globalConfig.colorCategories ? "☑":"☐"} Color Categories </span>, action: () => { setConfigAttribute('colorCategories', !globalConfig.colorCategories); return true; } },
+        { label: <span>{globalConfig.contrastMessage ? "☑":"☐"} Contrast Message</span>, action: () => { setConfigAttribute('contrastMessage', !globalConfig.contrastMessage); return true; } },
       ],
     },
   ];
 
   const defaultLayout = {
     dockbox: {
-      mode: 'vertical',
+      mode: 'horizontal',
       id: "default_panel",
       children: []
     }
@@ -177,7 +221,7 @@ function App() {
 
     <div className="tabContainer">
         <GlobalConfigContext.Provider value={globalConfig}>
-          <DockLayout ref={dockLayoutRef} defaultLayout={defaultLayout} groups={groups}/>
+          <DockLayout ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
       </GlobalConfigContext.Provider>
     </div>
 

@@ -24,6 +24,13 @@
         left: 0;
         right: 0;
 
+        &.concat {
+            padding-left: 2em;
+            width: 100%;
+            color: #444;
+            background-color: #111;
+        }
+
         &.even {
             background-color: $line-even-bg;
             .message {
@@ -55,9 +62,6 @@
                 background-color: $line-hover-bg;
             }
         }
-        .frame {
-            white-space: pre;
-        }
 
         .number {
             width: 30px;
@@ -65,6 +69,19 @@
             text-align: right;
             margin-right: 10px;
             color: #888;
+        }
+        
+        .greyout {
+            color: #888;
+        }
+        .timestamp {
+        }
+        .frame {
+            white-space: pre;
+        }
+        .category {
+        }
+        .verbosity {
         }
         .message {
             white-space:pre;
