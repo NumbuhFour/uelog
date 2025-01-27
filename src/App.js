@@ -38,7 +38,12 @@ const GlobalConfigDefault = {
   dragEdges: false,
   colorCategories: true,
   contrastMessage: true,
+  showOmissions: true,
 }
+
+const DefaultSavedFilters = [
+  {"title":"Errors & Warnings","description":"Filter description","guid":"df802a28-f401-4d7a-86b0-f4a25730caef","type":"root","children":[{"type":"or","children":[{"type":"verbosity","children":[],"value":"fatal"},{"type":"verbosity","children":[],"value":"error"},{"type":"verbosity","children":[],"value":"warning"}],"value":""}]}
+]
 
 
 function App() {
@@ -53,7 +58,7 @@ function App() {
 
   const [fileCollection, setFileCollection] = useState({})
 
-  const [savedFilters, setSavedFilters] = useState([])
+  const [savedFilters, setSavedFilters] = useState(DefaultSavedFilters)
 
   const AddFile = (file, parsedLines)  => {
     setFileCollection(old => {
@@ -340,6 +345,7 @@ function App() {
         { label: <span>{globalConfig.showTimestamp ? "☑":"☐"} Show Timestamp</span>, action: () => { setConfigAttribute('showTimestamp', !globalConfig.showTimestamp); return true; } },
         { label: <span>{globalConfig.timestampAsDelta ? "☑":"☐"} Timestamp as from Start</span>, action: () => { setConfigAttribute('timestampAsDelta', !globalConfig.timestampAsDelta); return true; } },
         { label: <span>{globalConfig.showFrame ? "☑":"☐"} Show Frame Numbers</span>, action: () => { setConfigAttribute('showFrame', !globalConfig.showFrame); return true; } },
+        { label: <span>{globalConfig.showOmissions ? "☑":"☐"} Show Omissions </span>, action: () => { setConfigAttribute('showOmissions', !globalConfig.showOmissions); return true; } },
         { label: <span>{globalConfig.colorCategories ? "☑":"☐"} Color Categories </span>, action: () => { setConfigAttribute('colorCategories', !globalConfig.colorCategories); return true; } },
         { label: <span>{globalConfig.contrastMessage ? "☑":"☐"} Contrast Message</span>, action: () => { setConfigAttribute('contrastMessage', !globalConfig.contrastMessage); return true; } },
       ],

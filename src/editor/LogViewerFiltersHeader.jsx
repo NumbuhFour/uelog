@@ -22,6 +22,7 @@ const ConditionNames = {
     'not': 'NOT',
     'category': 'Category',
     'categoryIncludes': 'Category Includes',
+    'verbosity': 'Log Level',
     'textIncludes': 'Text Includes',
     'messageIncludes': 'Message Includes',
     'textMatch': 'Text Matches Regex',
@@ -33,6 +34,7 @@ const ConditionOptions = [
     'not',
     'category',
     'categoryIncludes',
+    'verbosity',
     'textIncludes',
     'messageIncludes',
     'textMatch',
@@ -63,6 +65,9 @@ export function MatchesFilter(contentParts, filter, isBookmarked) {
         case 'categoryIncludes':
             //console.log("Include check: ", filter.value, contentParts.category, contentParts.category?.toLowerCase().includes(filter.value.toLowerCase()))
             return filter.value == '' || contentParts.category?.toLowerCase().includes(filter.value.toLowerCase())
+        case 'verbosity':
+            //console.log("Include check: ", filter.value, contentParts.category, contentParts.category?.toLowerCase().includes(filter.value.toLowerCase()))
+            return filter.value == '' || contentParts.verbosity?.toLowerCase() == filter.value.toLowerCase()
         case 'textIncludes':
             //console.log('MATCH textIncludes')
             return filter.value == '' || contentParts.fulltext?.toLowerCase().includes(filter.value.toLowerCase())
@@ -76,7 +81,7 @@ export function MatchesFilter(contentParts, filter, isBookmarked) {
             //console.log('MATCH messageIncludes')
             return isBookmarked;
         default:
-            //console.log("NO FILTER??", filter.type)
+            console.log("NO FILTER??", filter.type)
             return true;
     }
 }
@@ -127,6 +132,7 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
     }
     else if (node.type == "verbosity") {
         NodeInput = <select name="verbosity" value={node.value} onChange={(e) => updateValue(e.target.value)}>
+                        <option value="">  </option>
                         <option value="fatal"> Fatal </option>
                         <option value="error"> Error </option>
                         <option value="warning"> Warning </option>

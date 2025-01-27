@@ -163,8 +163,20 @@ body {
       .option {
         margin-bottom: -1px;
         border: 1px solid #ccc;
+        
+        padding: 5px 10px;
+        cursor: pointer;
+
         &:hover {
           background-color: $nav-bg-hover;
+        }
+        
+        &:has(>.separator) {
+
+          background-color: #ccc;
+          height: 2px;
+          padding: 0;
+          margin: 0;
         }
       }
   }
@@ -402,4 +414,26 @@ body {
   .savebtn {
     padding-top: 3px
   }
+}
+
+.list-group-item {
+  .card-title {
+    cursor: pointer;
+    .expandcollapse {
+      float:left;
+      margin-right: 5px;
+      padding-top: 3px;
+    }
+  }
+  .card-collapse {
+    transition: height 0.15s ease-out;
+  }
+  .collapsed {
+    height: 0 !important;
+    overflow: hidden;
+  }
+  // .card-body {
+  //   border: none !important; // why do we need this? (doesn't seem to change anything)
+  // }
+  h2 {margin-top: 5px !important;}
 }

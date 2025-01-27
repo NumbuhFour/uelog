@@ -40,10 +40,6 @@ export const LogViewerHeader = ({ menuConfig }) => {
                             {menu.items.map((item, idx) => (
                                 <div className="option"
                                     key={idx}
-                                    style={{
-                                        padding: "5px 10px",
-                                        cursor: "pointer",
-                                    }}
                                     onClick={(e)=>{if (!item.action(e)) setOpenMenuIndex(null)}}
                                 >
                                     {item.label}

@@ -6,6 +6,7 @@ import { IoMdReturnRight } from "react-icons/io";
 import { LogViewerLineRender } from "./LogViewerLine";
 import { FaTrash } from "react-icons/fa";
 import { AllFilesContext } from "../GlobalContext";
+import Collapsible from "../Collapsible";
 
 
 export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
@@ -61,7 +62,7 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
         .map(filename => {
             const file = allFiles[filename];
             return (<div class="section" key={filename}>
-                <h3> {filename} </h3>
+                <Collapsible title={filename}>
                 <div className="bookmarklist">
                     { Object.keys(file.bookmarks).map(line => {
                         const bookmark = file.bookmarks[line]
@@ -80,6 +81,7 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
                         </>)
                     }) }
                 </div>
+                </Collapsible>
             </div>)
         })
     }

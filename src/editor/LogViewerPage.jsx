@@ -86,7 +86,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       title: "Config",
       items: [
         { label: <span> {config.syncScroll ? "☑":"☐"} Sync Scrolling with Neighbors </span>, action: () => { setConfigAttribute('syncScroll', !config.syncScroll); return true; } },
-        { label: <span> {config.debugLine ? "☑":"☐"} Line Debug </span>, action: () => { setConfigAttribute('debugLine', !config.debugLine); return true; } },
+        //{ label: <span> {config.debugLine ? "☑":"☐"} Line Debug </span>, action: () => { setConfigAttribute('debugLine', !config.debugLine); return true; } },
       ],
     },
     {
@@ -94,10 +94,14 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       items:
       StatisticKeys_categories.map((stat) => 
               ({ label: (<span key={stat} className={['statistic', stat + "_total"].join(' ')}><label>{StatisticsTitles[stat + "_total"]}</label>: <span className="value">{statistics[stat + "_total"]}</span></span>), action: ()=>{} })
-      ).concat(
-      filters.children.length > 0 ? StatisticKeys_categories.map((stat) => 
+      )
+      .concat([{ label: (<span className="separator"></span>), action: ()=>{} }])
+      .concat(
+      (statistics.lines_total != statistics.lines_match) ? StatisticKeys_categories.map((stat) => 
         ({ label: (<span className={['statistic', stat + "_match"].join(' ')}><label>{StatisticsTitles[stat + "_match"]}</label>: <span className="value">{statistics[stat + "_match"]}</span></span>), action: ()=>{} })
-      ):[]),
+      ):[
+        { label: (<span className={['statistic'].join(' ')}><label>No lines filtered</label></span>), action: ()=>{} }
+      ]),
     },
     {
       title: "Filters",
@@ -158,7 +162,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
         
 
         const delta = ind - concatenationInd;
-        if (delta > 1) {
+        if (delta > 1 && globalConfigContext.showOmissions) {
           acc.push({
             type:"concat",
             numlines: delta
@@ -176,7 +180,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
 
     PopulateLogCategories();
 
-  }, [filters]);
+  }, [filters, globalConfigContext]);
 
   useEffect(() => {
     if (listRef && listRef.current) listRef.current.forceUpdate()
