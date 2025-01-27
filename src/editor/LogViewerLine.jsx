@@ -1,5 +1,11 @@
-import * as React from "react";
+import React, { useState, useEffect, useRef, useContext, createContext } from "react";
 import * as ReactDOM from "react-dom";
+
+import { CiBookmarkPlus  } from "react-icons/ci";
+import { BsFillBookmarkPlusFill } from "react-icons/bs";
+import { FaPlus, FaBookmark } from "react-icons/fa";
+import { BookmarkFunctionsContext, MyFilesContext } from "../GlobalContext";
+import { Tooltip } from "react-tooltip";
 
 function generateColorFromLogCat(str) {
     let hash = 0;
@@ -58,7 +64,8 @@ function RenderDeltaTime(delta) {
     return out;
 }
 
-export const LogViewerLine = ({ config, contentParts, style }) => {
+export const LogViewerLineRender = ({ myFile, getConfig, style, contentParts, BookmarkBtn}) => {
+
 
     return (
         <div className={[
@@ -69,17 +76,18 @@ export const LogViewerLine = ({ config, contentParts, style }) => {
             ].join(' ')}
             style={style}>
             { contentParts.type == 'line' && (<>
-                { config.showLineNumber && <span className="number"> {contentParts.linenumber} </span> }
-                <span className="text">
-                    { ((config.showTimestamp && contentParts.timestamp) || config.debugLine) && (
-                        <span className={["timestamp", config.contrastMessage?'greyout':''].join(' ')}>[{config.timestampAsDelta ? RenderDeltaTime(contentParts.timefromstart) : contentParts.timestamp}]</span>
+                { BookmarkBtn }
+                { getConfig('showLineNumber',true) && <span className="number"> {contentParts.linenumber} </span> }
+                <a className="lineTooltip" data-tooltip-variant="light" data-tooltip-content={myFile?.bookmarks[contentParts.linenumber]?.message}>
+                    { ((getConfig('showTimestamp',true) && contentParts.timestamp) || getConfig('debugLine',false)) && (
+                        <span className={["timestamp", getConfig('contrastMessage', true)?'greyout':''].join(' ')}>[{getConfig('timestampAsDelta',true) ? RenderDeltaTime(contentParts.timefromstart) : contentParts.timestamp}]</span>
                         )}
-                    { ((config.showFrame && contentParts.frame) || config.debugLine) && (<span className={["frame", config.contrastMessage?'greyout':''].join(' ')}>[{contentParts.frame?.trim().toString().padStart(3,' ')}]</span>)}
-                    { ((contentParts.category) || config.debugLine) && (<><span style={config.colorCategories ? {color:generateColorFromLogCat(contentParts.category)}:{}} className={["category", config.contrastMessage?'greyout':'', contentParts.category].join(' ')}>{contentParts.category}: </span></>)}
-                    { ((contentParts.verbosity) || config.debugLine) && (<><span className={["verbosity", contentParts.verbosity, config.contrastMessage?'greyout':''].join(' ')}>{contentParts.verbosity}: </span></>)}
-                    { ((contentParts.message) || config.debugLine) && (<span className="message">{contentParts.message}</span>)}
+                    { ((getConfig('showFrame',true) && contentParts.frame) || getConfig('debugLine', false)) && (<span className={["frame", getConfig('contrastMessage',true)?'greyout':''].join(' ')}>[{contentParts.frame?.trim().toString().padStart(3,' ')}]</span>)}
+                    { ((contentParts.category) || getConfig('debugLine', false)) && (<><span style={getConfig('colorCategories',true) ? {color:generateColorFromLogCat(contentParts.category)}:{}} className={["category", getConfig('contrastMessage',true)?'greyout':'', contentParts.category].join(' ')}>{contentParts.category}: </span></>)}
+                    { ((contentParts.verbosity) || getConfig('debugLine',false)) && (<><span className={["verbosity", contentParts.verbosity, getConfig('contrastMessage',true)?'greyout':''].join(' ')}>{contentParts.verbosity}: </span></>)}
+                    { ((contentParts.message) || getConfig('debugLine',false)) && (<span className="message">{contentParts.message}</span>)}
                     { (!contentParts.parseSuccess) && (<span className="parseError"> [PARSE ERROR]: {JSON.stringify(contentParts.fulltext)} </span>)}
-                </span>
+                </a>
             </>)}
             { contentParts.type == 'concat' && (<>
                 <span className="text">
@@ -88,4 +96,33 @@ export const LogViewerLine = ({ config, contentParts, style }) => {
             </>)}
         </div>
     );
+}
+
+export const LogViewerLine = ({ config, contentParts, style }) => {
+
+    const { myFile, setMyFile } = useContext(MyFilesContext);
+    const { OpenBookmark, OpenAddBookmark } = useContext(BookmarkFunctionsContext);
+
+    const getConfig = (attr, def=true) => {
+        if (!config) return def;
+        if (attr in config) return config[attr]
+        return def;
+    }
+
+    const Bookmark = () => {
+        return (
+            <span className={["bookmarkbtn", (contentParts.linenumber in myFile.bookmarks) ? 'present':'add'].join(' ')}> 
+                {(()=>{
+                    if (contentParts.linenumber in myFile.bookmarks)
+                        return <a onClick={()=>OpenBookmark(myFile.name, contentParts.linenumber)}> <FaBookmark /> </a>
+                    else
+                    return <a onClick={()=>OpenAddBookmark(myFile.name, contentParts.linenumber)}> <FaPlus /> </a>
+                })()}
+            </span>
+        )
+    }
+
+    return (
+        <LogViewerLineRender myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts}/>
+    )
 };

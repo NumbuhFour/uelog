@@ -74,3 +74,28 @@ export function GetNeighboringPanelsForTab(layoutData, tabId, mode="horizontal")
         return GetNeighboringPanels(panel, mode)
     return [];
 }
+
+function GetAllTabsForFile_Internal(ParentData, filename) {
+    if (ParentData?.tabs) {
+        return ParentData.tabs.filter(tab => tab['file'] == filename)
+    }
+    else if (ParentData?.children) {
+        return ParentData.children.reduce((acc, iter) => {
+            acc = acc.concat(GetAllTabsForFile_Internal(iter, filename))
+            return acc;
+        }, [])
+    }
+    else if (ParentData && ParentData['file'] == filename) {
+        return [ParentData];
+    }
+    return [];
+}
+export function GetAllTabsForFile(layoutData, filename) {
+    let out = []
+    out = out.concat(GetAllTabsForFile_Internal(layoutData.dockbox, filename))
+    out = out.concat(GetAllTabsForFile_Internal(layoutData.floatbox, filename))
+    out = out.concat(GetAllTabsForFile_Internal(layoutData.maxbox, filename))
+    out = out.concat(GetAllTabsForFile_Internal(layoutData.windowbox, filename))
+
+    return out;
+}

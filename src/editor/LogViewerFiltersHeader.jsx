@@ -107,18 +107,17 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
       };
     }, []);
 
-    console.log("FILTERS CATS???", logCategories)
 
     let NodeInput;
     if (node.type == "category") {
-        NodeInput = <select name="verbosity" onChange={(e) => updateValue(e.target.value)}>
+        NodeInput = <select name="verbosity" value={node.value} onChange={(e) => updateValue(e.target.value)}>
                         { logCategories.map(cat => (
                             <option value={cat}> {cat} </option>
                         )) }
                     </select>
     }
     else if (node.type == "verbosity") {
-        NodeInput = <select name="verbosity" onChange={(e) => updateValue(e.target.value)}>
+        NodeInput = <select name="verbosity" value={node.value} onChange={(e) => updateValue(e.target.value)}>
                         <option value="fatal"> Fatal </option>
                         <option value="error"> Error </option>
                         <option value="warning"> Warning </option>

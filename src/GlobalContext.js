@@ -9,3 +9,6 @@ export const GlobalConfigContext = createContext(null);
 export const AllFilesContext = createContext(null);
 
 export const MyFilesContext = createContext(null);
+
+
+export const BookmarkFunctionsContext = createContext(null);

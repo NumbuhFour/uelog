@@ -6,12 +6,20 @@ import { LogViewerHeader } from "./editor/LogViewerHeader";
 import "./App.scss";
 
 import "./editor/LogViewer.scss";
-import { AllFilesContext, DockLayoutContext, GlobalConfigContext, MyFilesContext } from "./GlobalContext";
-import { GetPanelForTab } from "./editor/DockUtils";
+import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalConfigContext, MyFilesContext } from "./GlobalContext";
+import { GetAllTabsForFile, GetPanelForTab } from "./editor/DockUtils";
+import { BookmarksWindow } from "./editor/BookmarksWindow";
 
 
 let groups = {
   'default': {
+    floatable: true,
+    tabLocked: false,
+    closable: true,
+    newWindow: true,
+    maximizable: true,
+  },
+  'windows': {
     floatable: true,
     tabLocked: false,
     closable: true,
@@ -44,21 +52,24 @@ function App() {
 
   const AddFile = (file, parsedLines)  => {
     setFileCollection(old => {
-      old[file.name] = {
+      const newData = {...old}
+      newData[file.name] = {
         name: file.name,
         lines: parsedLines,
         nextId: 0,
+        bookmarks: {},
       };
-      return old;
+      old[file.name] = newData[file.name]
+      return newData;
     })
   }
   const UpdateFile = (file, parsedLines) => {
 
     setFileCollection(old => {
-      const prevEntry = old[file.name]
-      prevEntry.lines = parsedLines;
-      old[file.name] = prevEntry;
-      return old;
+      const newData={...old}
+      newData[file.name].lines = parsedLines
+      old[file.name].lines = parsedLines
+      return newData;
     })
   }
 
@@ -92,11 +103,21 @@ function App() {
     }
   }, []);
 
+  const updateFile = (filename, value) => {
+    setFileCollection(old => {
+      const newData = {...old}
+      newData[filename] = value;
+      old[filename] = value;
+      return newData;
+    })
+  }
+
 
   const makeLogTab = (fileName) => {
     const file = fileCollection[fileName];
+    console.log("MAKING TAB FOR FILE", file)
     
-    const id = file.name + "_" + file.nextId;
+    const id = file.name + "||" + Math.random() + "||" + file.nextId;
     const tab = {
       id: id,
       title: file.name,
@@ -105,7 +126,6 @@ function App() {
       cached: true,
       content: (
         <DockLayoutContext.Provider value={dockLayoutRef.current}>
-          <AllFilesContext.Provider value={fileCollection}>
             <LogViewerPage file={fileName} id={id} 
               extraMenus={
                 [
@@ -118,19 +138,27 @@ function App() {
                 ]
               }
             />
-          </AllFilesContext.Provider>
         </DockLayoutContext.Provider>
       ),
       group: "default",
     }
+    console.log("MAKE LOG TAB: ", id)
 
-    file.nextId++;
+    setFileCollection(old => {
+      const newData = {...old}
+      newData[fileName].nextId++
+      console.log("ID UPDATE GEEZ", newData[fileName].nextId)
+      return newData
+    })
+
     return tab;
   }
 
   const splitTab = (fileName, tabId) => {
     const tab = makeLogTab(fileName);
 
+
+    console.log("Splitting", tab, tabId)
     dockLayoutRef.current.dockMove(tab, tabId, "after-tab")
   }
 
@@ -177,6 +205,57 @@ function App() {
     }
   };
 
+  const SetBookmark = (filename, line, data) => {
+    let file = fileCollection[filename];
+    file.bookmarks[line] = data;
+    updateFile(filename, file)
+    const tabs = GetAllTabsForFile(dockLayoutRef.current.getLayout(), filename);
+    tabs.forEach(i => {
+      if (i?.forceUpdate)
+        i.forceUpdate()
+    })
+  }
+  useEffect(() => {
+    OpenBookmarkTab(true)
+  }, [fileCollection])
+
+  const OpenBookmarkTab = (keepClosed=false) => {
+    const existing = dockLayoutRef.current.find('window_bookmark');
+    const newtab = {
+      id: 'window_bookmark',
+      title: "Bookmarks",
+      closable: true,
+      content: (
+        <AllFilesContext.Consumer>
+          {({allFiles, setAllFiles}) => (
+            <BookmarksWindow allFiles={allFiles} GetDockLayout={()=>dockLayoutRef.current} SetBookmark={SetBookmark}/>
+          )}
+        </AllFilesContext.Consumer>
+      ),
+      group: "windows",
+    }
+    if (existing) {
+      //dockLayoutRef.current.updateTab('window_bookmark', newtab)
+    }
+    else if (!keepClosed){
+      dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
+    }
+  }
+
+  const OpenAddBookmark = (filename, line) => {
+    console.log("Add bookmark", filename, line)
+    SetBookmark(filename, line, {
+      message: "Bookmark"
+    })
+    OpenBookmarkTab();
+  }
+
+  const OpenBookmark = (filename, line) => {
+    console.log("Open bookmark", filename, line)
+    OpenBookmarkTab();
+  }
+
+
   // Drop-down menu config
   const menuConfig = [
     {
@@ -204,6 +283,12 @@ function App() {
         { label: <span>{globalConfig.contrastMessage ? "☑":"☐"} Contrast Message</span>, action: () => { setConfigAttribute('contrastMessage', !globalConfig.contrastMessage); return true; } },
       ],
     },
+    {
+      title: "Windows",
+      items: [
+        { label: <span> Bookmarks </span>, action: () => { OpenBookmarkTab(); } },
+      ],
+    },
   ];
 
   const defaultLayout = {
@@ -221,7 +306,11 @@ function App() {
 
     <div className="tabContainer">
         <GlobalConfigContext.Provider value={globalConfig}>
-          <DockLayout ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
+          <BookmarkFunctionsContext.Provider value={{OpenAddBookmark, OpenBookmark}}>
+            <AllFilesContext.Provider value={{allFiles:fileCollection, setAllFiles:setFileCollection}}>
+              <DockLayout ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
+            </AllFilesContext.Provider>
+          </BookmarkFunctionsContext.Provider>
       </GlobalConfigContext.Provider>
     </div>
 

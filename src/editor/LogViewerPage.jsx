@@ -6,9 +6,10 @@ import { FixedSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 import "./LogViewer.scss";
-import { AllFilesContext, GlobalConfigContext, DockLayoutContext } from "../GlobalContext";
+import { AllFilesContext, GlobalConfigContext, DockLayoutContext, MyFilesContext } from "../GlobalContext";
 import { LogViewerFiltersHeader, MatchesFilter } from "./LogViewerFiltersHeader";
 import { GetNeighboringPanelsForTab, GetPanelForTab } from "./DockUtils";
+import { Tooltip } from "react-tooltip";
 
 let ConfigDefault = {
   debugLine: false,
@@ -44,7 +45,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   const [config, setConfig] = useState(ConfigDefault);
   const [showFilters, setShowFilters] = useState(false);
   const globalConfigContext = useContext(GlobalConfigContext);
-  const allFilesContext = useContext(AllFilesContext);
+  const { allFiles, setAllFiles} = useContext(AllFilesContext);
   const dockLayoutContext = useContext(DockLayoutContext);
   const [ filters, setFilters ] = useState({ type: "root", children: [] });
   const listRef = useRef();
@@ -56,7 +57,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   let forceMove = false;
 
   
-  const [ lines, setLines ] = useState( allFilesContext[file].lines );
+  const [ lines, setLines ] = useState( allFiles[file].lines );
 
   const setConfigAttribute = (attribute, value) => {
     setConfig(prevConfig => 
@@ -67,8 +68,12 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     })
   }
   useEffect(() => {
-    if (dockLayoutContext.getLayout())
+    if (dockLayoutContext.getLayout()) {
       dockLayoutContext.find(id)['NeighborScroll'] = NeighborScroll;
+      dockLayoutContext.find(id)['ForceUpdate'] = () => {
+        listRef.current?.forceUpdate()
+      };
+    }
   }, [config])
 
   const toggleFilters = () => {
@@ -121,7 +126,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   const PopulateLogCategories = () => {
     let logCategoryCounts = {}
 
-    allFilesContext[file].lines.forEach((line) => {
+    allFiles[file].lines.forEach((line) => {
       if (line.category) {
         if (!(line.category in logCategoryCounts)) logCategoryCounts[line.category] = 0
         logCategoryCounts[line.category]++
@@ -136,7 +141,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
 
     let concatenationInd = 0;
     let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
-    setLines(allFilesContext[file].lines.reduce((acc, line, ind) => {
+    setLines(allFiles[file].lines.reduce((acc, line, ind) => {
 
       const matches = MatchesFilter(line, filters);
         
@@ -165,7 +170,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       return acc;
     }, []))
 
-    statisticsCopy.lines_total = allFilesContext[file].lines.length;
+    statisticsCopy.lines_total = allFiles[file].lines.length;
     statisticsCopy.lines_match = lines.length;
     setStatistics(statisticsCopy);
 
@@ -211,6 +216,15 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     test: (val)=>{console.log("GOOOO", id, val)}
   }*/
 
+  const updateFile = (filename, value) => {
+    setAllFiles(old => {
+      const newData = {...old}
+      newData[filename] = value;
+      old[filename] = value;
+      return newData;
+    })
+  }
+
   const NeighborScroll = (targetLine) => {
     if (!config.syncScroll) return;
 
@@ -233,12 +247,18 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     //listRef.current.forceUpdate();
   }
   useEffect(() => {
-    if (dockLayoutContext.getLayout())
+    if (dockLayoutContext.getLayout()) {
       dockLayoutContext.find(id)['NeighborScroll'] = NeighborScroll;
+      dockLayoutContext.find(id)['forceUpdate'] = () => {
+        listRef.current.forceUpdate()
+      };
+    }
+
   }, [])
 
   return (
     <>
+    <MyFilesContext.Provider value={{myFile: allFiles[file], setMyFile: updateFile.bind(this, file)}}>
       <LogViewerHeader menuConfig={menuConfig} />
       { showFilters && <LogViewerFiltersHeader logCategories={logCategories} conditionTree={filters} setConditionTree={UpdateFilters} /> }
     <div className="LogViewer">
@@ -257,7 +277,9 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
           )}
         </AutoSizer>
       </div>
+      <Tooltip anchorSelect=".lineTooltip" />
     </div>
+    </MyFilesContext.Provider>
     </>
   );
 };
