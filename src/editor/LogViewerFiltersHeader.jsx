@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { FaPlus, FaTrash } from "react-icons/fa";
 
 const CompositeTypes = [
     'and',
@@ -20,6 +21,7 @@ const ConditionNames = {
     'textIncludes': 'Text Includes',
     'messageIncludes': 'Message Includes',
     'textMatch': 'Text Matches Regex',
+    'bookmarked': 'Is Bookmarked',
 }
 const ConditionOptions = [
     'and',
@@ -30,26 +32,27 @@ const ConditionOptions = [
     'textIncludes',
     'messageIncludes',
     'textMatch',
+    'bookmarked',
 ]
 
-export function MatchesFilter(contentParts, filter) {
+export function MatchesFilter(contentParts, filter, isBookmarked) {
     //console.log("MATCH CHECK ", contentParts, filter)
     if (filter == undefined) {
         //console.log("NO FILTER")
         return true;
     }
     switch(filter.type) {
-        case 'root':
-            //console.log("ROOT")
         case 'and':
             //console.log('MATCH and')
-            return filter.children.length == 0 || filter.children.every(i => MatchesFilter(contentParts, i))
+            return filter.children.length == 0 || filter.children.every(i => MatchesFilter(contentParts, i, isBookmarked))
+        case 'root':
+            //console.log("ROOT")
         case 'or':
             //console.log('MATCH or')
-            return filter.children.length == 0 || filter.children.some(i => MatchesFilter(contentParts, i))
+            return filter.children.length == 0 || filter.children.some(i => MatchesFilter(contentParts, i, isBookmarked))
         case 'not':
             //console.log('MATCH not')
-            return filter.children.length == 0 || !filter.children.every(i => MatchesFilter(contentParts, i))
+            return filter.children.length == 0 || !filter.children.every(i => MatchesFilter(contentParts, i, isBookmarked))
         case 'category':
             //console.log("Include check: ", filter.value, contentParts.category, contentParts.category?.toLowerCase().includes(filter.value.toLowerCase()))
             return filter.value == '' || contentParts.category?.toLowerCase() == filter.value.toLowerCase()
@@ -65,6 +68,9 @@ export function MatchesFilter(contentParts, filter) {
         case 'messageIncludes':
             //console.log('MATCH messageIncludes')
             return filter.value == '' || contentParts.message?.toLowerCase().includes(filter.value.toLowerCase())
+        case 'bookmarked':
+            //console.log('MATCH messageIncludes')
+            return isBookmarked;
         default:
             //console.log("NO FILTER??", filter.type)
             return true;
@@ -127,6 +133,9 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
                         <option value="veryverbose"> Very Verbose </option>
                     </select>
     }
+    else if (node.type == "bookmarked") {
+        NodeInput = <span></span>
+    }
     else if (!IsTypeComposite(node.type)) {
         NodeInput = <input
                         type="text"
@@ -147,7 +156,7 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
             )}
             {node.type !== 'root' && (
                 <>
-                    <button onClick={removeNode}>X</button>
+                    <a className="smbtn remove" onClick={removeNode}><FaTrash/></a>
                 </>
             )}
 
@@ -157,6 +166,7 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
                     
                     {node.children &&
                     node.children.map((child, index) => (
+                        <div className="child">
                         <ConditionNode
                         logCategories={logCategories}
                         key={index}
@@ -175,27 +185,19 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
                             })
                         }
                         />
+                        </div>
                     ))}
 
                     {
                         (node.type != 'not' || node.children.length == 0) &&
                         (<>
-                            <button ref={addRef} onClick={() => {console.log("DROPDOWN GO", showDropdown); setShowDropdown(!showDropdown) }}> +Add </button>
+                            <a className="smbtn add" ref={addRef} onClick={() => {console.log("DROPDOWN GO", showDropdown); setShowDropdown(!showDropdown) }}> <FaPlus/> </a>
                         </>)
                     }
 
                     {showDropdown && (
                     <div
                         ref={dropdownRef}
-                        style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        background: "white",
-                        border: "1px solid #ccc",
-                        boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                        zIndex: 10,
-                        }}
                     >
                         {ConditionOptions.map(opt => (
                             <>
@@ -242,7 +244,7 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
     ]
 
     return (
-        <div ref={menuRef} className="FileMenu">
+        <div ref={menuRef} className="Filters">
             <ConditionNode
                 logCategories={logCategories}
                 node={conditionTree}

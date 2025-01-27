@@ -215,17 +215,9 @@ body {
 
   .smbtn {
     opacity: 0;
-    margin: 0 3px;
     &.jump {
       float:left;
-      color: $bookmark-btn;
       font-size: 150%;
-    }
-    &.remove {
-      color: $remove-btn;
-    }
-    &:hover {
-      color: $text-color !important;
     }
   }
 
@@ -243,5 +235,50 @@ body {
 
   .entry:hover .preview {
     opacity: 1;
+  }
+}
+
+
+
+.smbtn {
+  margin: 0 3px;
+
+  svg {
+    pointer-events: none;
+  }
+
+  &.jump {
+    color: $bookmark-btn;
+  }
+  &.add {
+    color: $bookmark-btn;
+  }
+  &.remove {
+    color: $remove-btn;
+  }
+  &:hover {
+    color: $text-color !important;
+  }
+}
+
+
+.Filters {
+  font-family: monospace;
+  padding: 5px !important;
+  margin: 15px;
+  z-index: 12;
+  width: 90%;
+  position: relative;
+  background-color: $nav-bg;
+  .child {
+    border-left: 1px solid $text-color;
+    padding-left: 5px;
+  }
+  &>.node>div>.child {
+    border-left: none;
+  }
+
+  button {
+    margin: 5px;
   }
 }

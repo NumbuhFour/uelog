@@ -143,7 +143,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
     setLines(allFiles[file].lines.reduce((acc, line, ind) => {
 
-      const matches = MatchesFilter(line, filters);
+      const matches = MatchesFilter(line, filters, line.linenumber in allFiles[file].bookmarks);
         
       if (line.verbosity == "Warning") {
         statisticsCopy.warnings_total++;
