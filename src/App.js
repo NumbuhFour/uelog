@@ -129,11 +129,16 @@ function App() {
             <LogViewerPage file={fileName} id={id} 
               extraMenus={
                 [
-                  {
+                  { 
                     title: "Split",
-                    onClick: ()=>{
-                      splitTab(fileName, id)
-                    }
+                    items: [
+                      { label: 'Right', action: ()=> splitTab(fileName, id, 'right')}, 
+                      { label: 'Left', action: ()=> splitTab(fileName, id, 'left')}, 
+                      { label: 'Up', action: ()=> splitTab(fileName, id, 'up')}, 
+                      { label: 'Down', action: ()=> splitTab(fileName, id, 'down')}, 
+                      { label: 'After', action: ()=> splitTab(fileName, id, 'after-tab')}, 
+                      { label: 'Before', action: ()=> splitTab(fileName, id, 'before-tab')}, 
+                    ]
                   }
                 ]
               }
@@ -154,12 +159,18 @@ function App() {
     return tab;
   }
 
-  const splitTab = (fileName, tabId) => {
+  const splitTab = (fileName, tabId, mode="Down") => {
     const tab = makeLogTab(fileName);
 
 
     console.log("Splitting", tab, tabId)
-    dockLayoutRef.current.dockMove(tab, tabId, "after-tab")
+    if (['after-tab', 'before-tab'].includes(mode)) {
+      dockLayoutRef.current.dockMove(tab, tabId, mode)
+    }
+    else {
+      const owner = GetPanelForTab(dockLayoutRef.current.getLayout(), tabId)
+      dockLayoutRef.current.dockMove(tab, owner, mode)
+    }
   }
 
   const addTabForFile = (fileName) => {
