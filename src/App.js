@@ -10,6 +10,8 @@ import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalCon
 import { GetAllTabsForFile, GetPanelForTab } from "./editor/DockUtils";
 import { BookmarksWindow } from "./editor/BookmarksWindow";
 
+import { ToastContainer, toast } from 'react-toastify';
+
 
 let groups = {
   'default': {
@@ -324,7 +326,7 @@ function App() {
           </BookmarkFunctionsContext.Provider>
       </GlobalConfigContext.Provider>
     </div>
-
+    <ToastContainer position="bottom-right" draggable theme="dark"/>
     </>
   );
 }

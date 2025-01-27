@@ -47,7 +47,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   const globalConfigContext = useContext(GlobalConfigContext);
   const { allFiles, setAllFiles} = useContext(AllFilesContext);
   const dockLayoutContext = useContext(DockLayoutContext);
-  const [ filters, setFilters ] = useState({ type: "root", children: [] });
+  const [ filters, setFilters ] = useState({ type: "root", children: [ { type: "textIncludes", children: [], value: ""}] });
   const listRef = useRef();
 
   const [ logCategories, setLogCategories ] = useState([]);

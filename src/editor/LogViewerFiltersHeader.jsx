@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { BiSave } from "react-icons/bi";
 import { FaCopy, FaPlus, FaSave, FaTrash } from "react-icons/fa";
 import { LuClipboardPaste } from "react-icons/lu";
+import { toast } from 'react-toastify';
 
 const CompositeTypes = [
     'and',
@@ -44,11 +45,11 @@ export function MatchesFilter(contentParts, filter, isBookmarked) {
         return true;
     }
     switch(filter.type) {
+        case 'root':
+            //console.log("ROOT")
         case 'and':
             //console.log('MATCH and')
             return filter.children.length == 0 || filter.children.every(i => MatchesFilter(contentParts, i, isBookmarked))
-        case 'root':
-            //console.log("ROOT")
         case 'or':
             //console.log('MATCH or')
             return filter.children.length == 0 || filter.children.some(i => MatchesFilter(contentParts, i, isBookmarked))
@@ -77,7 +78,6 @@ export function MatchesFilter(contentParts, filter, isBookmarked) {
             //console.log("NO FILTER??", filter.type)
             return true;
     }
-    console.log("WHAT???", filter)
 }
 
 const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
@@ -150,17 +150,19 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
 
     return (
         <div className="node">
-            <span className="title"> {ConditionNames[node.type]} </span>
-            {!IsTypeComposite(node.type) && (
-                <span>
-                    {NodeInput}
-                </span>
-            )}
-            {node.type !== 'root' && (
-                <>
-                    <a className="smbtn remove" onClick={removeNode}><FaTrash/></a>
-                </>
-            )}
+            <span className="info">
+                <span className="title"> {ConditionNames[node.type]} </span>
+                {!IsTypeComposite(node.type) && (
+                    <span>
+                        {NodeInput}
+                    </span>
+                )}
+                {node.type !== 'root' && (
+                    <>
+                        <a className="smbtn remove" onClick={removeNode}><FaTrash/></a>
+                    </>
+                )}
+            </span>
 
             {IsTypeComposite(node.type) && (
                 <>
@@ -193,20 +195,21 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
                     {
                         (node.type != 'not' || node.children.length == 0) &&
                         (<>
-                            <a className="smbtn add" ref={addRef} onClick={() => {console.log("DROPDOWN GO", showDropdown); setShowDropdown(!showDropdown) }}> <FaPlus/> </a>
+                            <a className="smbtn add" ref={addRef} onClick={() => setShowDropdown(!showDropdown) }> <FaPlus/> </a>
                         </>)
                     }
 
                     {showDropdown && (
-                    <div
-                        ref={dropdownRef}
-                    >
-                        {ConditionOptions.map(opt => (
-                            <>
-                                <button onClick={() => addCondition(opt)}>{ConditionNames[opt]}</button>
-                            </>
-                        ))}
-                    </div>
+                        <span
+                            ref={dropdownRef}
+                            className="addcondition"
+                        >
+                            {ConditionOptions.map(opt => (
+                                <>
+                                    <button onClick={() => addCondition(opt)}>{ConditionNames[opt]}</button>
+                                </>
+                            ))}
+                        </span>
                     )}
                     </div>
                 </>
@@ -251,6 +254,7 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
     const OnCopy = () => {
         console.log("Copy click!", JSON.stringify(conditionTree))
         navigator.clipboard.writeText(JSON.stringify(conditionTree))
+        toast("Copied!")
     }
 
     const OnSave = () => {
@@ -261,10 +265,78 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
         setPasteValue(e.target.value)
     }
 
+
+    const ValidateNode = (node) => {
+        if (typeof node != 'object') {
+            console.error("Node is not object", node)
+            return false;
+        }
+        if (Array.isArray(node)){
+            console.error("Node is an array", node)
+            return false;
+        }
+
+        if (!(node.type in ConditionNames)) {
+            console.error("Node type is not in valid", node)
+            return false;
+        }
+        if (IsTypeComposite(node.type)) {
+            if (node.children == null) {
+                console.error("Composite node does not have children list")
+                return false;
+            }
+            if (!Array.isArray(node.children)) {
+                console.error("Composite node's children is not an array")
+                return false;
+            }
+            return node.children.every(c => ValidateNode(c))
+        }
+        else {
+            if (typeof node.value != 'string') {
+                console.error("Singular node's value is not string")
+                return false;
+            }
+            if (node.value == undefined) {
+                console.error("Singular node's value is undefined")
+                return false;
+            }
+            return true;
+        }
+    }
+    const ValidateTree = (treeString) => {
+        try {
+            const tree = JSON.parse(treeString)
+            if (tree?.type != "root") return false;
+            return ValidateNode(tree)
+        }
+        catch(e) {
+            console.error("Error during parse", treeString, e)
+            return false;
+        }
+    }
+
     const OnPasteSubmit = () => {
-        console.log("Pasting!", JSON.parse(pasteValue))
-        setConditionTree(JSON.parse(pasteValue))
-        setPasteValue("")
+        if (pasteValue.trim() == '') {
+            toast.error("You must paste into the text box first")
+            return;
+        }
+
+        if (ValidateTree(pasteValue)) {
+            console.log("Pasting!", JSON.parse(pasteValue))
+            toast("Loaded filter!")
+            setConditionTree(JSON.parse(pasteValue))
+            setPasteValue("")
+        }
+        else {
+            toast.error("Unable to parse filter.")
+            console.error("Bad condition tree", pasteValue)
+        }
+    }
+
+    const OnPasteKey = (e) => {
+        if (e.key == "Enter" && !e.shiftKey) {
+            OnPasteSubmit()
+        }
     }
 
     return (
@@ -279,7 +351,7 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
             <div className="loadbtns">
                 <a onClick={OnSave} className="savebtn borderbtn"><FaSave/></a>
                 <a onClick={OnCopy} className="copybtn borderbtn"><FaCopy/></a>
-                <input onChange={OnPasteChange} value={pasteValue} type="text" placeholder="Paste here"></input>
+                <input onKeyDown={OnPasteKey} onChange={OnPasteChange} value={pasteValue} type="text" placeholder="Paste here"></input>
                 <a onClick={OnPasteSubmit} className="loadbtn borderbtn"><LuClipboardPaste/></a>
             </div>
         </div>
