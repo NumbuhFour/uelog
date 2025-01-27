@@ -64,21 +64,23 @@ function RenderDeltaTime(delta) {
     return out;
 }
 
-export const LogViewerLineRender = ({ myFile, getConfig, style, contentParts, BookmarkBtn}) => {
+export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentParts, BookmarkBtn}) => {
 
 
     return (
-        <div className={[
+        <div key={key} className={[
                 "line",
                 GetVerbosityClass(contentParts.verbosity),
-                contentParts.linenumber % 2 == 0 ? "even":"odd",
+                getConfig('alternatingBackground', true) ? (contentParts.linenumber % 2 == 0 ? "even":"odd"):'',
                 contentParts.type,
+                getConfig('nohover', false) ? "nohover":"",
+                getConfig('nobg', false) ? "nobg":"",
             ].join(' ')}
             style={style}>
             { contentParts.type == 'line' && (<>
                 { BookmarkBtn }
                 { getConfig('showLineNumber',true) && <span className="number"> {contentParts.linenumber} </span> }
-                <a className="lineTooltip" data-tooltip-variant="light" data-tooltip-content={myFile?.bookmarks[contentParts.linenumber]?.message}>
+                <a className="lineTooltip" data-tooltip-variant="light" data-tooltip-content={myFile?.bookmarks[contentParts.linenumber]?.message} data-tooltip-delay-show={670} >
                     { ((getConfig('showTimestamp',true) && contentParts.timestamp) || getConfig('debugLine',false)) && (
                         <span className={["timestamp", getConfig('contrastMessage', true)?'greyout':''].join(' ')}>[{getConfig('timestampAsDelta',true) ? RenderDeltaTime(contentParts.timefromstart) : contentParts.timestamp}]</span>
                         )}
@@ -98,7 +100,7 @@ export const LogViewerLineRender = ({ myFile, getConfig, style, contentParts, Bo
     );
 }
 
-export const LogViewerLine = ({ config, contentParts, style }) => {
+export const LogViewerLine = ({ key, config, contentParts, style }) => {
 
     const { myFile, setMyFile } = useContext(MyFilesContext);
     const { OpenBookmark, OpenAddBookmark } = useContext(BookmarkFunctionsContext);
@@ -123,6 +125,6 @@ export const LogViewerLine = ({ config, contentParts, style }) => {
     }
 
     return (
-        <LogViewerLineRender myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts}/>
+        <LogViewerLineRender key={key} myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts}/>
     )
 };

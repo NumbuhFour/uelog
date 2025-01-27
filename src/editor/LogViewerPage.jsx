@@ -93,7 +93,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       title: "Statistics",
       items:
       StatisticKeys_categories.map((stat) => 
-              ({ label: (<span className={['statistic', stat + "_total"].join(' ')}><label>{StatisticsTitles[stat + "_total"]}</label>: <span className="value">{statistics[stat + "_total"]}</span></span>), action: ()=>{} })
+              ({ label: (<span key={stat} className={['statistic', stat + "_total"].join(' ')}><label>{StatisticsTitles[stat + "_total"]}</label>: <span className="value">{statistics[stat + "_total"]}</span></span>), action: ()=>{} })
       ).concat(
       filters.children.length > 0 ? StatisticKeys_categories.map((stat) => 
         ({ label: (<span className={['statistic', stat + "_match"].join(' ')}><label>{StatisticsTitles[stat + "_match"]}</label>: <span className="value">{statistics[stat + "_match"]}</span></span>), action: ()=>{} })
@@ -277,7 +277,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
           )}
         </AutoSizer>
       </div>
-      <Tooltip anchorSelect=".lineTooltip" />
+      <Tooltip place="bottom-start" anchorSelect=".lineTooltip"/>
     </div>
     </MyFilesContext.Provider>
     </>

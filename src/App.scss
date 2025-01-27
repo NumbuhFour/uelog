@@ -1,5 +1,10 @@
+body {
+  font-family: monospace;
+}
+
 .App {
   text-align: center;
+  font-family: monospace;
 }
 
 .App-logo {
@@ -174,5 +179,69 @@ body {
 
 .bookmarkbtn {
   font-size: 0.9em;
-  color: rgb(115, 159, 252);
+  color: $bookmark-btn;
+}
+
+
+.bookmarksWindow {
+  font-family: monospace;
+
+  .entry {
+
+    .info {
+      display: flex;
+      flex-direction: row;
+      input {
+        flex-grow: 1;
+        border: none;
+      }
+    }
+
+    &:hover, &:focus {
+      input {
+      }
+      .smbtn {
+        opacity: 1;
+      }
+    }
+    &:not(:hover):not(:focus) {
+      input {
+        background-color: $component-background;
+        color: $text-color;
+        outline: none;
+      }
+    }
+  }
+
+  .smbtn {
+    opacity: 0;
+    margin: 0 3px;
+    &.jump {
+      float:left;
+      color: $bookmark-btn;
+      font-size: 150%;
+    }
+    &.remove {
+      color: $remove-btn;
+    }
+    &:hover {
+      color: $text-color !important;
+    }
+  }
+
+  .preview {
+    opacity: 0.5;
+    
+    .line {
+      padding: 3px 2em;
+    }
+    .message {
+      font-size: 80%;
+      white-space: unset;
+    }
+  }
+
+  .entry:hover .preview {
+    opacity: 1;
+  }
 }

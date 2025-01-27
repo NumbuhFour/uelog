@@ -4,11 +4,14 @@ import { GetAllTabsForFile } from "./DockUtils";
 
 import { IoMdReturnRight } from "react-icons/io";
 import { LogViewerLineRender } from "./LogViewerLine";
+import { FaTrash } from "react-icons/fa";
+import { AllFilesContext } from "../GlobalContext";
 
 
-export const BookmarksWindow = ( { allFiles, GetDockLayout, SetBookmark }) => {
+export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
 
-    console.log("BOOKMARK FILES", allFiles)
+    const {allFiles, setAllFiles} = useContext(AllFilesContext)
+
 
 
     const UpdateText = (filename, line, text) => {
@@ -18,16 +21,29 @@ export const BookmarksWindow = ( { allFiles, GetDockLayout, SetBookmark }) => {
     }
 
     const JumpToBookmark = (filename, line) => {
-        const tabs = GetAllTabsForFile(GetDockLayout().getLayout(), filename);
+    console.log("BOOKMARK JUMP", line)
+    const tabs = GetAllTabsForFile(GetDockLayout().getLayout(), filename);
         tabs.forEach(tab => {
             if (tab.NeighborScroll)
                 tab.NeighborScroll(allFiles[filename].lines[line])
         })
     }
 
+    const RemoveBookmark = (filename, line) => {
+        console.log("Remove bookmark", filename, line)
+        setAllFiles(old => {
+            const newData = {...old};
+            delete newData[filename].bookmarks[line]
+            return newData
+        })
+    }
+
 
     const config = {
-        showLineNumber: false
+        showLineNumber: false,
+        alternatingBackground: false,
+        nohover: true,
+        nobg:true,
     }
 
     const getConfig = (attr, def=true) => {
@@ -37,29 +53,35 @@ export const BookmarksWindow = ( { allFiles, GetDockLayout, SetBookmark }) => {
     }
 
 
-    return (<>
+    return (<div className="bookmarksWindow">
     <h2> Bookmarks </h2>
     <hr />
     {
         Object.keys(allFiles).filter(filename => Object.keys(allFiles[filename].bookmarks).length > 0)
         .map(filename => {
             const file = allFiles[filename];
-            return (<>
+            return (<div class="section" key={filename}>
                 <h3> {filename} </h3>
                 <div className="bookmarklist">
                     { Object.keys(file.bookmarks).map(line => {
                         const bookmark = file.bookmarks[line]
                         return (<>
-                            <div>
-                                <span>{line}: </span><input type="text" value={bookmark.message} onChange={(e)=>UpdateText(filename, line, e.target.value)}></input>
-                                <a onClick={()=>JumpToBookmark(filename, line)}> <IoMdReturnRight /></a>
-                                <div><LogViewerLineRender getConfig={getConfig} contentParts={file.lines[line]}/></div>
+                            <div key={line.number} className="entry">
+                                <div className="info">
+                                    <span className="number">{line}: </span>
+                                    <input type="text" value={bookmark.message} onChange={(e)=>UpdateText(filename, line, e.target.value)}></input>
+                                    <a title="Remove bookmark" className="smbtn remove" onClick={()=>RemoveBookmark(filename, line)}> <FaTrash /></a>
+                                </div>
+                                <div className="preview">
+                                <a title="Go to line" className="smbtn jump" onClick={()=>JumpToBookmark(filename, line)}> <IoMdReturnRight /></a>
+                                    <a onClick={()=>JumpToBookmark(filename,line)}><LogViewerLineRender getConfig={getConfig} contentParts={file.lines[line-1]}/></a>
+                                </div>
                             </div>
                         </>)
                     }) }
                 </div>
-            </>)
+            </div>)
         })
     }
-    </>)
+    </div>)
 }

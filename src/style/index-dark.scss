@@ -32,11 +32,19 @@ $box-shadow-base: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0,
 $line-warning-bg: #493704;
 $line-error-bg: #490404;
 $line-fatal-bg: #490404;
+
+$line-warning-text: #dca715;
+$line-error-text: #e21212;
+$line-fatal-text: #e21212;
+
 $line-even-bg:  #222222;
 $line-hover-bg:  #0e4369;
 
 
 $nav-bg: #434343;
 $nav-bg-hover: #344d65;
+
+$bookmark-btn: rgb(115, 159, 252);
+$remove-btn: #5e0707;
 
 @import "./index";

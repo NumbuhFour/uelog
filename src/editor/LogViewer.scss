@@ -1,6 +1,112 @@
 
 @import "../style/index-dark";
 
+.line {
+
+    &.concat {
+        padding-left: 2em;
+        width: 100%;
+        color: #444;
+        background-color: #111;
+    }
+    &:not(.nobg) {
+
+        &.even {
+            background-color: $line-even-bg;
+            .message {
+                background-color: $line-even-bg;
+            }
+        }
+    
+        &.lineWarning {
+            background-color: $line-warning-bg;
+            .message {
+                background-color: $line-warning-bg;
+            }
+        }
+        &.lineError {
+            background-color: $line-error-bg;
+            .message {
+                background-color: $line-error-bg;
+            }
+        }
+        &.lineFatal {
+            background-color: $line-fatal-bg;
+            .message {
+                background-color: $line-fatal-bg;
+            }
+        }
+        &:hover:not(.nohover){
+            background-color: $line-hover-bg;
+            .message {
+                background-color: $line-hover-bg;
+            }
+            .bookmarkbtn {
+                &.add {
+                    opacity: unset;
+                }
+            }
+        }
+    }
+
+    &.nobg {
+        
+        .Warning {
+            color: $line-warning-text;
+        }
+        .Error {
+            color: $line-error-text;
+        }
+        .Fatal {
+            color: $line-fatal-text;
+        }
+    }
+    
+    .bookmarkbtn {
+        position: relative;
+        top: 2px;
+        left: 3px;
+        padding-right: 2px;
+
+        &.add {
+            opacity: 0;
+        }
+
+        &:hover {
+            color: $text-color;
+        }
+    }
+
+    .number {
+        width: 30px;
+        display: inline-block;
+        text-align: right;
+        margin-right: 10px;
+        color: #888;
+    }
+    
+    .greyout {
+        color: #888;
+    }
+    .timestamp {
+    }
+    .frame {
+        white-space: pre;
+    }
+    .category {
+    }
+    .verbosity {
+    }
+    .message {
+        white-space:pre;
+    }
+
+    .parseError {
+        background-color: darkred;
+        font-weight: bold;
+    }
+}
+
 .LogViewer {
     font-family: monospace;
     max-height: 100%;
@@ -23,93 +129,7 @@
         position: absolute;
         left: 0;
         right: 0;
-
-        &.concat {
-            padding-left: 2em;
-            width: 100%;
-            color: #444;
-            background-color: #111;
-        }
-
-        &.even {
-            background-color: $line-even-bg;
-            .message {
-                background-color: $line-even-bg;
-            }
-        }
-
-        &.lineWarning {
-            background-color: $line-warning-bg;
-            .message {
-                background-color: $line-warning-bg;
-            }
-        }
-        &.lineError {
-            background-color: $line-error-bg;
-            .message {
-                background-color: $line-error-bg;
-            }
-        }
-        &.lineFatal {
-            background-color: $line-fatal-bg;
-            .message {
-                background-color: $line-fatal-bg;
-            }
-        }
-        &:hover {
-            background-color: $line-hover-bg;
-            .message {
-                background-color: $line-hover-bg;
-            }
-            .bookmarkbtn {
-                &.add {
-                    opacity: unset;
-                }
-            }
-        }
-        
-        .bookmarkbtn {
-            position: relative;
-            top: 2px;
-            left: 3px;
-            padding-right: 2px;
-
-            &.add {
-                opacity: 0;
-            }
-
-            &:hover {
-                color: white;
-            }
-        }
-
-        .number {
-            width: 30px;
-            display: inline-block;
-            text-align: right;
-            margin-right: 10px;
-            color: #888;
-        }
-        
-        .greyout {
-            color: #888;
-        }
-        .timestamp {
-        }
-        .frame {
-            white-space: pre;
-        }
-        .category {
-        }
-        .verbosity {
-        }
-        .message {
-            white-space:pre;
-        }
-
-        .parseError {
-            background-color: darkred;
-            font-weight: bold;
-        }
     }
+
+    
 }
