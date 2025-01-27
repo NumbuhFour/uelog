@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { BiSave } from "react-icons/bi";
 import { FaCopy, FaPlus, FaSave, FaTrash } from "react-icons/fa";
 import { LuClipboardPaste } from "react-icons/lu";
 import { toast } from 'react-toastify';
+import { SavedFiltersContext } from "../GlobalContext";
 
 const CompositeTypes = [
     'and',
@@ -218,10 +219,20 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
     )
 }
 
+function generateGUID() {
+    let guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    return guid;
+}
+
 export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setConditionTree }) => {
   
     const [openMenuIndex, setOpenMenuIndex] = useState(null);
     const menuRef = useRef(null);
+
+    const [ savedFilters, setSavedFilters, OpenFiltersTab ] = useContext(SavedFiltersContext);
 
     const [ pasteValue, setPasteValue ] = useState("")
 
@@ -258,7 +269,18 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
     }
 
     const OnSave = () => {
-
+        setSavedFilters(old => {
+            const newData = [...old]
+            newData.push({
+                title: "Filter Title",
+                description: "Filter description",
+                guid: generateGUID(),
+                ...conditionTree
+            })
+            return newData;
+        })
+        OpenFiltersTab()
+        toast("Filter saved!")
     }
 
     const OnPasteChange = (e) => {

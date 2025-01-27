@@ -12,3 +12,5 @@ export const MyFilesContext = createContext(null);
 
 
 export const BookmarkFunctionsContext = createContext(null);
+
+export const SavedFiltersContext = createContext(null);

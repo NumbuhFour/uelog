@@ -183,8 +183,19 @@ body {
 }
 
 
-.bookmarksWindow {
+
+.toolwindow {
   font-family: monospace;
+  .smbtn {
+    opacity: 0;
+    &.jump {
+      float:left;
+      font-size: 150%;
+    }
+  }
+}
+
+.bookmarksWindow {
 
   .entry {
 
@@ -213,13 +224,6 @@ body {
     }
   }
 
-  .smbtn {
-    opacity: 0;
-    &.jump {
-      float:left;
-      font-size: 150%;
-    }
-  }
 
   .preview {
     opacity: 0.5;
@@ -238,6 +242,54 @@ body {
   }
 }
 
+
+
+.filtersWindow {
+
+  .entry {
+
+    .info {
+      display: flex;
+      flex-direction: row;
+      input {
+        flex-grow: 1;
+        border: none;
+      }
+    }
+
+    &:hover, &:focus {
+      input {
+      }
+      .smbtn {
+        opacity: 1;
+      }
+    }
+    &:not(:hover):not(:focus) {
+      input {
+        background-color: $component-background;
+        color: $text-color;
+        outline: none;
+      }
+    }
+  }
+
+
+  .preview {
+    opacity: 0.5;
+    
+    .line {
+      padding: 3px 2em;
+    }
+    .message {
+      font-size: 80%;
+      white-space: unset;
+    }
+  }
+
+  .entry:hover .preview {
+    opacity: 1;
+  }
+}
 
 
 .smbtn {

@@ -6,11 +6,12 @@ import { LogViewerHeader } from "./editor/LogViewerHeader";
 import "./App.scss";
 
 import "./editor/LogViewer.scss";
-import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalConfigContext, MyFilesContext } from "./GlobalContext";
+import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalConfigContext, MyFilesContext, SavedFiltersContext } from "./GlobalContext";
 import { GetAllTabsForFile, GetPanelForTab } from "./editor/DockUtils";
 import { BookmarksWindow } from "./editor/BookmarksWindow";
 
 import { ToastContainer, toast } from 'react-toastify';
+import { FiltersWindow } from "./editor/FiltersWindow";
 
 
 let groups = {
@@ -52,6 +53,8 @@ function App() {
 
   const [fileCollection, setFileCollection] = useState({})
 
+  const [savedFilters, setSavedFilters] = useState([])
+
   const AddFile = (file, parsedLines)  => {
     setFileCollection(old => {
       const newData = {...old}
@@ -87,10 +90,6 @@ function App() {
       return out
     })
   }
-  useEffect(() => {
-    localStorage.setItem('storedConfig', JSON.stringify(globalConfig));
-    console.log("update conifg", localStorage.getItem('storedConfig'))
-  }, [globalConfig]);
 
   // Grab the directory used last time, saved to local storage
   useEffect(() => {
@@ -103,7 +102,25 @@ function App() {
     if (storedConfig) {
       setGlobalConfig(JSON.parse(storedConfig));
     }
+
+    
+    const storedFilters = localStorage.getItem('storedFilters');
+    console.log("Loading filters", )
+    if (storedFilters) {
+      setSavedFilters(JSON.parse(storedFilters));
+    }
   }, []);
+  
+  useEffect(() => {
+    localStorage.setItem('storedConfig', JSON.stringify(globalConfig));
+    console.log("update conifg", localStorage.getItem('storedConfig'))
+  }, [globalConfig]);
+  useEffect(() => {
+    if (savedFilters.length > 0) {
+      localStorage.setItem('storedFilters', JSON.stringify(savedFilters));
+      console.log("update filters", localStorage.getItem('storedFilters'))
+    }
+  }, [savedFilters]);
 
   const updateFile = (filename, value) => {
     setFileCollection(old => {
@@ -149,12 +166,10 @@ function App() {
       ),
       group: "default",
     }
-    console.log("MAKE LOG TAB: ", id)
 
     setFileCollection(old => {
       const newData = {...old}
       newData[fileName].nextId++
-      console.log("ID UPDATE GEEZ", newData[fileName].nextId)
       return newData
     })
 
@@ -251,7 +266,12 @@ function App() {
       //dockLayoutRef.current.updateTab('window_bookmark', newtab)
     }
     else if (!keepClosed){
-      dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
+      if (dockLayoutRef.current.find('window_filter')) {
+        dockLayoutRef.current.dockMove(newtab, 'window_filter', 'after-tab')
+      }
+      else {
+        dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
+      }
     }
   }
 
@@ -266,6 +286,34 @@ function App() {
   const OpenBookmark = (filename, line) => {
     console.log("Open bookmark", filename, line)
     OpenBookmarkTab();
+  }
+
+  const OpenFiltersTab = () => {
+    const existing = dockLayoutRef.current.find('window_filter');
+    const newtab = {
+      id: 'window_filter',
+      title: "Filters",
+      closable: true,
+      content: (
+        <AllFilesContext.Consumer>
+          {({allFiles, setAllFiles}) => (
+            <FiltersWindow allFiles={allFiles} GetDockLayout={()=>dockLayoutRef.current}/>
+          )}
+        </AllFilesContext.Consumer>
+      ),
+      group: "windows",
+    }
+    if (existing) {
+      //dockLayoutRef.current.updateTab('window_bookmark', newtab)
+    }
+    else {
+      if (dockLayoutRef.current.find('window_bookmark')) {
+        dockLayoutRef.current.dockMove(newtab, 'window_bookmark', 'after-tab')
+      }
+      else {
+        dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
+      }
+    }
   }
 
 
@@ -300,6 +348,7 @@ function App() {
       title: "Windows",
       items: [
         { label: <span> Bookmarks </span>, action: () => { OpenBookmarkTab(); } },
+        { label: <span> Filters </span>, action: () => { OpenFiltersTab(); } },
       ],
     },
   ];
@@ -320,9 +369,11 @@ function App() {
     <div className="tabContainer">
         <GlobalConfigContext.Provider value={globalConfig}>
           <BookmarkFunctionsContext.Provider value={{OpenAddBookmark, OpenBookmark}}>
-            <AllFilesContext.Provider value={{allFiles:fileCollection, setAllFiles:setFileCollection}}>
-              <DockLayout ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
-            </AllFilesContext.Provider>
+            <SavedFiltersContext.Provider value={[savedFilters, setSavedFilters, OpenFiltersTab]}>
+              <AllFilesContext.Provider value={{allFiles:fileCollection, setAllFiles:setFileCollection}}>
+                <DockLayout ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
+              </AllFilesContext.Provider>
+            </SavedFiltersContext.Provider>
           </BookmarkFunctionsContext.Provider>
       </GlobalConfigContext.Provider>
     </div>
