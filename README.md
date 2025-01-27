@@ -2,6 +2,8 @@
 
 This is a pretty simple log viewer tool for Unreal Engine logs.
 
+[Open the Log Viewer](https://numbuhfour.github.io/uelog/)
+
 ## Features
 - Multi-window for multiple filters or logs
 - Synced scrolling with adjacent filtered views
