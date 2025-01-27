@@ -278,7 +278,34 @@ body {
     border-left: none;
   }
 
-  button {
-    margin: 5px;
+  .loadbtns {
+    position: absolute;
+    right: 0;
+    top: -2px;
+    display:flex;
+    flex-direction: row;
+    input {
+      height: 12px;
+      margin-top: 6px;
+      width: 60px;
+    }
+    
+  }
+  .borderbtn {
+    padding: 2px 4px;
+    display: block;
+    margin: 5px 0;
+
+    &:hover {
+      background-color: $nav-bg-hover;
+    }
+    svg {
+      pointer-events: none;
+    }
+  }
+  .copybtn {
+  }
+  .savebtn {
+    padding-top: 3px
   }
 }

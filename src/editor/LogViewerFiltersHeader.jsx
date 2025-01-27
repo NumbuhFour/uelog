@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaPlus, FaTrash } from "react-icons/fa";
+import { BiSave } from "react-icons/bi";
+import { FaCopy, FaPlus, FaSave, FaTrash } from "react-icons/fa";
+import { LuClipboardPaste } from "react-icons/lu";
 
 const CompositeTypes = [
     'and',
@@ -218,6 +220,8 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
     const [openMenuIndex, setOpenMenuIndex] = useState(null);
     const menuRef = useRef(null);
 
+    const [ pasteValue, setPasteValue ] = useState("")
+
     const toggleMenu = (index) => {
         setOpenMenuIndex(openMenuIndex === index ? null : index);
     };
@@ -243,6 +247,26 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
         }
     ]
 
+
+    const OnCopy = () => {
+        console.log("Copy click!", JSON.stringify(conditionTree))
+        navigator.clipboard.writeText(JSON.stringify(conditionTree))
+    }
+
+    const OnSave = () => {
+
+    }
+
+    const OnPasteChange = (e) => {
+        setPasteValue(e.target.value)
+    }
+
+    const OnPasteSubmit = () => {
+        console.log("Pasting!", JSON.parse(pasteValue))
+        setConditionTree(JSON.parse(pasteValue))
+        setPasteValue("")
+    }
+
     return (
         <div ref={menuRef} className="Filters">
             <ConditionNode
@@ -252,6 +276,12 @@ export const LogViewerFiltersHeader = ({ logCategories, conditionTree, setCondit
                     setConditionTree(updater(conditionTree))
                 }}
             />
+            <div className="loadbtns">
+                <a onClick={OnSave} className="savebtn borderbtn"><FaSave/></a>
+                <a onClick={OnCopy} className="copybtn borderbtn"><FaCopy/></a>
+                <input onChange={OnPasteChange} value={pasteValue} type="text" placeholder="Paste here"></input>
+                <a onClick={OnPasteSubmit} className="loadbtn borderbtn"><LuClipboardPaste/></a>
+            </div>
         </div>
     );
 };
