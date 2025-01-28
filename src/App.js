@@ -12,6 +12,7 @@ import { BookmarksWindow } from "./editor/BookmarksWindow";
 
 import { ToastContainer, toast } from 'react-toastify';
 import { FiltersWindow } from "./editor/FiltersWindow";
+import { AboutTab } from "./AboutTab";
 
 
 let groups = {
@@ -48,6 +49,7 @@ const DefaultSavedFilters = [
 
 function App() {
   const dockLayoutRef = useRef(null);
+  const [ firstTab, setFirstTab ] = useState(true)
   let configDefault = GlobalConfigDefault
   const existingConfig = JSON.parse(localStorage.getItem('storedConfig'))
   if (existingConfig) configDefault = existingConfig;
@@ -59,6 +61,16 @@ function App() {
   const [fileCollection, setFileCollection] = useState({})
 
   const [savedFilters, setSavedFilters] = useState(DefaultSavedFilters)
+
+
+  const OnFirstTabOpened = () => {
+    if (firstTab) {
+      setFirstTab(false);
+      if (dockLayoutRef.current.find('window_about')) {
+        dockLayoutRef.current.dockMove(dockLayoutRef.current.find('window_about'), undefined, 'remove')
+      }
+    }
+  }
 
   const AddFile = (file, parsedLines)  => {
     setFileCollection(old => {
@@ -197,7 +209,7 @@ function App() {
 
   const addTabForFile = (fileName) => {
     const tab = makeLogTab(fileName);
-
+    OnFirstTabOpened();
     dockLayoutRef.current.dockMove(tab, dockLayoutRef.current.getLayout().dockbox, "middle")
   }
 
@@ -252,6 +264,21 @@ function App() {
     OpenBookmarkTab(true)
   }, [fileCollection])
 
+  const OpenWindowTab = (newtab) => {
+    const tabs = ['window_filter', 'window_bookmark', 'window_about']
+    
+    OnFirstTabOpened();
+
+    if (!tabs.some(id => {
+      if (dockLayoutRef.current.find(id)) {
+        dockLayoutRef.current.dockMove(newtab, id, 'after-tab')
+        return true;
+      }
+    }))
+      dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
+      
+  }
+
   const OpenBookmarkTab = (keepClosed=false) => {
     const existing = dockLayoutRef.current.find('window_bookmark');
     const newtab = {
@@ -271,12 +298,7 @@ function App() {
       //dockLayoutRef.current.updateTab('window_bookmark', newtab)
     }
     else if (!keepClosed){
-      if (dockLayoutRef.current.find('window_filter')) {
-        dockLayoutRef.current.dockMove(newtab, 'window_filter', 'after-tab')
-      }
-      else {
-        dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
-      }
+      OpenWindowTab(newtab)
     }
   }
 
@@ -312,12 +334,26 @@ function App() {
       //dockLayoutRef.current.updateTab('window_bookmark', newtab)
     }
     else {
-      if (dockLayoutRef.current.find('window_bookmark')) {
-        dockLayoutRef.current.dockMove(newtab, 'window_bookmark', 'after-tab')
-      }
-      else {
-        dockLayoutRef.current.dockMove(newtab, dockLayoutRef.current.getLayout().dockbox, 'right')
-      }
+      OpenWindowTab(newtab)
+    }
+  }
+
+  const OpenAboutTab = () => {
+    const existing = dockLayoutRef.current.find('window_about');
+    const newtab = {
+      id: 'window_about',
+      title: "About",
+      closable: true,
+      content: (
+        <AboutTab />
+      ),
+      group: "windows",
+    }
+    if (existing) {
+      //dockLayoutRef.current.updateTab('window_bookmark', newtab)
+    }
+    else {
+      OpenWindowTab(newtab)
     }
   }
 
@@ -355,6 +391,7 @@ function App() {
       items: [
         { label: <span> Bookmarks </span>, action: () => { OpenBookmarkTab(); } },
         { label: <span> Filters </span>, action: () => { OpenFiltersTab(); } },
+        { label: <span> About </span>, action: () => { OpenAboutTab(); } },
       ],
     },
   ];
@@ -363,7 +400,31 @@ function App() {
     dockbox: {
       mode: 'horizontal',
       id: "default_panel",
-      children: []
+      children: [
+        
+        {
+          mode: 'horizontal',
+          size: 200,
+          children: [
+            {
+              tabs: [
+                {
+                  id: 'window_about',
+                  title: "About",
+                  closable: true,
+                  content: (
+                    <AboutTab />
+                  ),
+                  group: "windows",
+                }
+
+              ],
+            },
+          ]
+        },
+        
+        
+        ]
     }
   };
 

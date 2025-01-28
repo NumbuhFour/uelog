@@ -1,8 +1,15 @@
-# UE Log Viewer
 
+import ReactMarkdown from 'react-markdown'
+
+
+const markdown = `
+# About
 This is a pretty simple log viewer tool for Unreal Engine logs.
 
-[Open the Log Viewer](https://numbuhfour.github.io/uelog/)
+Open a file with **File > Open...** in the top left.
+
+Split a file for comparison with the **Split** option in the log window.
+
 
 ## Features
 - Multi-window for multiple filters or logs
@@ -11,3 +18,11 @@ This is a pretty simple log viewer tool for Unreal Engine logs.
 - Bookmark lines and write comments on them
 - Save, copy, and load filters
 - All local - nothing is uploaded or sent anywhere. Everything stays in your browser
+
+`;
+
+export const AboutTab = () => {
+    return (<div style={{padding: "0px 20px"}}>
+        <ReactMarkdown>{markdown}</ReactMarkdown>
+        </div>)
+}
