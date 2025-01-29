@@ -514,8 +514,8 @@ function App() {
           const data = {
             appVersion: AppVersion,
             FileVersion: FileVersion,
-            layout: layoutData,
             fileCollection: collection,
+            layout: layoutData,
           }
           
           let savedfile = JSON.stringify(data, null, 4)
