@@ -77,7 +77,7 @@ export function GetNeighboringPanelsForTab(layoutData, tabId, mode="horizontal")
 
 function GetAllTabsForFile_Internal(ParentData, filename) {
     if (ParentData?.tabs) {
-        return ParentData.tabs.filter(tab => tab['file'] == filename)
+        return ParentData.tabs.filter(tab => tab['fileName'] == filename)
     }
     else if (ParentData?.children) {
         return ParentData.children.reduce((acc, iter) => {
@@ -85,17 +85,70 @@ function GetAllTabsForFile_Internal(ParentData, filename) {
             return acc;
         }, [])
     }
-    else if (ParentData && ParentData['file'] == filename) {
+    else if (ParentData && ParentData['fileName'] == filename) {
         return [ParentData];
     }
     return [];
 }
 export function GetAllTabsForFile(layoutData, filename) {
     let out = []
+    console.log('Get all tabs for file asd!', filename, layoutData.dockbox)
     out = out.concat(GetAllTabsForFile_Internal(layoutData.dockbox, filename))
     out = out.concat(GetAllTabsForFile_Internal(layoutData.floatbox, filename))
     out = out.concat(GetAllTabsForFile_Internal(layoutData.maxbox, filename))
     out = out.concat(GetAllTabsForFile_Internal(layoutData.windowbox, filename))
+
+    return out;
+}
+
+function GetAllTabsInGroup_Internal(ParentData, group) {
+    if (ParentData?.tabs) {
+        return ParentData.tabs.filter(tab => tab.group == group)
+    }
+    else if (ParentData?.children) {
+        return ParentData.children.reduce((acc, iter) => {
+            acc = acc.concat(GetAllTabsInGroup_Internal(iter, group))
+            return acc;
+        }, [])
+    }
+    else if (ParentData && ParentData.group == group) {
+        return [ParentData];
+    }
+    return [];
+}
+export function GetAllTabsInGroup(layoutData, group) {
+    let out = []
+    out = out.concat(GetAllTabsInGroup_Internal(layoutData.dockbox, group))
+    out = out.concat(GetAllTabsInGroup_Internal(layoutData.floatbox, group))
+    out = out.concat(GetAllTabsInGroup_Internal(layoutData.maxbox, group))
+    out = out.concat(GetAllTabsInGroup_Internal(layoutData.windowbox, group))
+
+    return out;
+}
+
+
+
+function GetAllTabs_Internal(ParentData) {
+    if (ParentData?.tabs) {
+        return ParentData.tabs
+    }
+    else if (ParentData?.children) {
+        return ParentData.children.reduce((acc, iter) => {
+            acc = acc.concat(GetAllTabs_Internal(iter))
+            return acc;
+        }, [])
+    }
+    else if (ParentData) {
+        return [ParentData];
+    }
+    return [];
+}
+export function GetAllTabs(layoutData) {
+    let out = []
+    out = out.concat(GetAllTabs_Internal(layoutData.dockbox))
+    out = out.concat(GetAllTabs_Internal(layoutData.floatbox))
+    out = out.concat(GetAllTabs_Internal(layoutData.maxbox))
+    out = out.concat(GetAllTabs_Internal(layoutData.windowbox))
 
     return out;
 }

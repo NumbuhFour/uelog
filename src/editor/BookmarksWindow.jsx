@@ -22,8 +22,7 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
     }
 
     const JumpToBookmark = (filename, line) => {
-    console.log("BOOKMARK JUMP", line)
-    const tabs = GetAllTabsForFile(GetDockLayout().getLayout(), filename);
+        const tabs = GetAllTabsForFile(GetDockLayout().getLayout(), filename);
         tabs.forEach(tab => {
             if (tab.NeighborScroll)
                 tab.NeighborScroll(allFiles[filename].lines[line])
@@ -31,7 +30,6 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
     }
 
     const RemoveBookmark = (filename, line) => {
-        console.log("Remove bookmark", filename, line)
         setAllFiles(old => {
             const newData = {...old};
             delete newData[filename].bookmarks[line]
@@ -61,7 +59,7 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
         Object.keys(allFiles).filter(filename => Object.keys(allFiles[filename].bookmarks).length > 0)
         .map(filename => {
             const file = allFiles[filename];
-            return (<div class="section" key={filename}>
+            return (<div className="section" key={filename}>
                 <Collapsible title={filename}>
                 <div className="bookmarklist">
                     { Object.keys(file.bookmarks).map(line => {

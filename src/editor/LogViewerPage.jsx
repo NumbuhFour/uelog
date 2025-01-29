@@ -41,13 +41,18 @@ const StatisticsDefault = {
 }
 
 
-export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
-  const [config, setConfig] = useState(ConfigDefault);
+export const LogViewerPage = (props) => {
+  
+   const { tabData, file, id, extraMenus=[] } = props
+  const [config, setConfig] = useState(tabData.config || ConfigDefault);
   const [showFilters, setShowFilters] = useState(false);
   const globalConfigContext = useContext(GlobalConfigContext);
   const { allFiles, setAllFiles} = useContext(AllFilesContext);
+  if (!allFiles[file])
+    console.error("File not found in collection: ", file)
+
   const dockLayoutContext = useContext(DockLayoutContext);
-  const [ filters, setFilters ] = useState({ type: "root", children: [ { type: "textIncludes", children: [], value: ""}] });
+  const [ filters, setFilters ] = useState(tabData.filters ? tabData.filters : { type: "root", children: [ { type: "textIncludes", children: [], value: ""}] });
   const listRef = useRef();
 
   const [ logCategories, setLogCategories ] = useState([]);
@@ -56,8 +61,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
 
   let forceMove = false;
 
-  
-  const [ lines, setLines ] = useState( allFiles[file].lines );
+  const [ lines, setLines ] = useState( (allFiles && file in allFiles) ? allFiles[file].lines:[] );
 
   const setConfigAttribute = (attribute, value) => {
     setConfig(prevConfig => 
@@ -68,12 +72,12 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     })
   }
   useEffect(() => {
-    if (dockLayoutContext.getLayout()) {
-      dockLayoutContext.find(id)['NeighborScroll'] = NeighborScroll;
-      dockLayoutContext.find(id)['ForceUpdate'] = () => {
-        listRef.current?.forceUpdate()
-      };
+    tabData.NeighborScroll = NeighborScroll;
+    tabData.ForceUpdate = () => {
+      listRef.current?.forceUpdate()
     }
+
+    tabData.config = config;
   }, [config])
 
   const toggleFilters = () => {
@@ -109,9 +113,9 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
     }
   ];
 
-  const Row = ({ index, key, style }) => (
+  const Row = ({ index, style }) => (
     //<div key={key} style={style} > LINE {index} </div>
-    <LogViewerLine style={style} config={{ ...globalConfigContext, ...config }} key={key} contentParts={lines[index]} />
+    <LogViewerLine style={style} config={{ ...globalConfigContext, ...config }} contentParts={lines[index]} />
   )
 
   /*const longestLine = lines.reduce((acc,iter) => {
@@ -129,6 +133,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
 
   const PopulateLogCategories = () => {
     let logCategoryCounts = {}
+    if (!allFiles || !(file in allFiles)) return;
 
     allFiles[file].lines.forEach((line) => {
       if (line.category) {
@@ -142,6 +147,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   }
 
   useEffect(() => {
+    if (!allFiles || !(file in allFiles)) return;
 
     let concatenationInd = 0;
     let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
@@ -183,15 +189,21 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   }, [filters, globalConfigContext]);
 
   useEffect(() => {
+    props.tabData.filters = filters;
+    console.log("Updating filters on tabdata", props)
+  }, [filters])
+
+  useEffect(() => {
     if (listRef && listRef.current) listRef.current.forceUpdate()
 
     PopulateLogCategories();
-    console.log("Categories updated: ", logCategories)
 
   }, [lines]); 
 
 
   const onScroll = (e) => {
+    tabData.scroll = e.scrollOffset;
+
     if (e.scrollUpdateWasRequested) return;
     if (forceMove)  {
       return;
@@ -206,19 +218,13 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       for (var n of neighbors) {
         if (n)
         for (var t of n?.tabs) {
-          //t?.content?.test(123)
-          console.log(id, "Scroll detected", line.linenumber, e)
-          if (t.file == file && t?.NeighborScroll)
+          if (t.fileName == file && t?.NeighborScroll)
           {
             t.NeighborScroll(line)
           }
         }
       }
   }
-
-  /*this.prototype= {
-    test: (val)=>{console.log("GOOOO", id, val)}
-  }*/
 
   const updateFile = (filename, value) => {
     setAllFiles(old => {
@@ -230,7 +236,8 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
   }
 
   const NeighborScroll = (targetLine) => {
-    if (!config.syncScroll) return;
+    console.log('NEIGHBOR SCROLL!', targetLine)
+    if (!targetLine || !config.syncScroll) return;
 
     forceMove = true;
     let scrollIndex  = 0;
@@ -245,24 +252,21 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
       }
     }
     
-    console.log("Scrolling FORCE", config, id,  targetLine.linenumber, scrollIndex - 15)
-    listRef.current.scrollToItem(scrollIndex - 15, "start")
+    listRef.current?.scrollToItem(scrollIndex - 15, "start")
     forceMove = false;
     //listRef.current.forceUpdate();
   }
   useEffect(() => {
-    if (dockLayoutContext.getLayout()) {
-      dockLayoutContext.find(id)['NeighborScroll'] = NeighborScroll;
-      dockLayoutContext.find(id)['forceUpdate'] = () => {
-        listRef.current.forceUpdate()
-      };
+    tabData.NeighborScroll = NeighborScroll;
+    tabData.ForceUpdate = () => {
+      listRef.current?.forceUpdate()
     }
 
   }, [])
 
   return (
     <>
-    <MyFilesContext.Provider value={{myFile: allFiles[file], setMyFile: updateFile.bind(this, file)}}>
+    <MyFilesContext.Provider value={{myFile: (allFiles && file in allFiles) ? allFiles[file]:undefined, setMyFile: updateFile.bind(this, file)}}>
       <LogViewerHeader menuConfig={menuConfig} />
       { showFilters && <LogViewerFiltersHeader logCategories={logCategories} conditionTree={filters} setConditionTree={UpdateFilters} /> }
     <div className="LogViewer">
@@ -270,6 +274,7 @@ export const LogViewerPage = ({ file, id, extraMenus=[] }) => {
         <AutoSizer>
           {({ height, width }) => (
           <List ref={listRef}
+            initialScrollOffset={tabData?.scroll}
             height={height}
             width={width}
             itemCount={lines.length}

@@ -105,6 +105,8 @@ export const LogViewerLine = ({ key, config, contentParts, style }) => {
     const { myFile, setMyFile } = useContext(MyFilesContext);
     const { OpenBookmark, OpenAddBookmark } = useContext(BookmarkFunctionsContext);
 
+    if (!myFile) return <></>
+
     const getConfig = (attr, def=true) => {
         if (!config) return def;
         if (attr in config) return config[attr]

@@ -86,7 +86,7 @@ export function MatchesFilter(contentParts, filter, isBookmarked) {
     }
 }
 
-const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
+const ConditionNode = ({ key, node, updateNode, removeNode, logCategories }) => {
     const [ showDropdown, setShowDropdown ] = useState(true)
     const dropdownRef = useRef();
     const addRef = useRef();
@@ -156,7 +156,7 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
 
 
     return (
-        <div className="node">
+        <div key={key} className="node">
             <span className="info">
                 <span className="title"> {ConditionNames[node.type]} </span>
                 {!IsTypeComposite(node.type) && (
@@ -180,7 +180,7 @@ const ConditionNode = ({ node, updateNode, removeNode, logCategories }) => {
                         <div className="child">
                         <ConditionNode
                         logCategories={logCategories}
-                        key={index}
+                        key={key + ':' + index}
                         node={child}
                         removeNode={() => {
                             updateNode((prev) => ({

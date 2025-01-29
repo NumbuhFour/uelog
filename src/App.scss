@@ -106,6 +106,29 @@ body {
     height: 100%;
   }
 }
+
+.my-panel-extra-btn {
+  cursor: pointer;
+  display: inline-block;
+  width: 18px;
+  height: 24px;
+  text-align: center;
+  opacity: 0.3;
+  transition: all 0.25s ease-in-out;
+  line-height: 30px;
+}
+
+.my-panel-extra-btn:hover {
+  opacity: 1;
+}
+
+.btn {
+  margin: 1px 5px;
+  padding: 1px 5px;
+}
+
+
+
 @import "./style/index-dark";
 @include style-common($background-color, $text-color, $component-background, $disabled-color);
 
@@ -326,6 +349,10 @@ body {
 }
 
 
+.FileMenu:hover + .Filters, .Filters:hover {
+  opacity: 1 !important;
+  transition: opacity 0.1s ease-in;
+}
 
 .Filters {
   font-family: monospace;
@@ -340,10 +367,6 @@ body {
   opacity: 0.6;
   transition: opacity 0.2s ease-out 0.85s;
   
-  &:hover {
-    opacity: 1;
-    transition: opacity 0.1s ease-in;
-  }
   .child {
     border-left: 1px solid $text-color;
     padding-left: 5px;

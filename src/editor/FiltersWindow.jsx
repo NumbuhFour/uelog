@@ -116,7 +116,7 @@ export const FiltersWindow = ( { GetDockLayout, SetBookmark }) => {
         /*Object.keys(allFiles).filter(filename => Object.keys(allFiles[filename].bookmarks).length > 0)
         .map(filename => {
             const file = allFiles[filename];
-            return (<div class="section" key={filename}>
+            return (<div className="section" key={filename}>
                 <h3> {filename} </h3>
                 <div className="filterslist">
                     { Object.keys(file.bookmarks).map(line => {

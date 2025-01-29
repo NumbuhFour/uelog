@@ -7,21 +7,51 @@ import "./App.scss";
 
 import "./editor/LogViewer.scss";
 import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalConfigContext, MyFilesContext, SavedFiltersContext } from "./GlobalContext";
-import { GetAllTabsForFile, GetPanelForTab } from "./editor/DockUtils";
+import { GetAllTabs, GetAllTabsForFile, GetAllTabsInGroup, GetPanelForTab } from "./editor/DockUtils";
 import { BookmarksWindow } from "./editor/BookmarksWindow";
 
 import { ToastContainer, toast } from 'react-toastify';
 import { FiltersWindow } from "./editor/FiltersWindow";
 import { AboutTab } from "./AboutTab";
+import { IoMdClose } from "react-icons/io";
+import { TbArrowsMaximize, TbWindowMaximize } from "react-icons/tb";
+import { FaWindowMinimize } from "react-icons/fa";
 
+const panelExtra = (panelData, context) => {
+
+  let buttons = [];
+  if (panelData.parent.mode !== 'window') {
+    buttons.push(
+      <span className='my-panel-extra-btn' key='maximize'
+            title={panelData.parent.mode === 'maximize' ? 'Restore' : 'Maximize'}
+            onClick={() => context.dockMove(panelData, null, 'maximize')}>
+      {panelData.parent.mode === 'maximize' ? <FaWindowMinimize /> : <TbArrowsMaximize />}
+      </span>
+    )
+    buttons.push(
+      <span className='my-panel-extra-btn' key='new-window' title='Open in new window'
+            onClick={() => context.dockMove(panelData, null, 'new-window')}>
+      <TbWindowMaximize />
+      </span>
+    )
+  }
+  buttons.push(
+    <span className='my-panel-extra-btn' key='close' title='Close'
+          onClick={() => context.dockMove(panelData, null, 'remove')}>
+      <IoMdClose />
+    </span>
+  )
+  return <div>{buttons}</div>
+}
 
 let groups = {
-  'default': {
+  'logfile': {
     floatable: true,
     tabLocked: false,
     closable: true,
     newWindow: true,
     maximizable: true,
+    panelExtra,
   },
   'windows': {
     floatable: true,
@@ -29,6 +59,7 @@ let groups = {
     closable: true,
     newWindow: true,
     maximizable: true,
+    panelExtra,
   }
 };
 const GlobalConfigDefault = {
@@ -47,6 +78,8 @@ const DefaultSavedFilters = [
 ]
 
 
+let SavingAnnotatedFile = false
+
 function App() {
   const dockLayoutRef = useRef(null);
   const [ firstTab, setFirstTab ] = useState(true)
@@ -54,8 +87,9 @@ function App() {
   const existingConfig = JSON.parse(localStorage.getItem('storedConfig'))
   if (existingConfig) configDefault = existingConfig;
   const [globalConfig, setGlobalConfig] = useState(configDefault)
-  const inputRef = useRef(null);
   const [lastDirectory, setLastDirectory] = useState('');
+  const [lastAnnotationDirectory, setLastAnnotationDirectory] = useState('');
+  const [layoutState, setLayoutState] = useState()
 
 
   const [fileCollection, setFileCollection] = useState({})
@@ -112,7 +146,13 @@ function App() {
   useEffect(() => {
     const storedDirectory = localStorage.getItem('lastDirectory');
     if (storedDirectory) {
+      console.log("Got last log directory from storage: ", storedDirectory)
       setLastDirectory(storedDirectory);
+    }
+    const storedAnnoDirectory = localStorage.getItem('lastAnnoDirectory');
+    if (storedAnnoDirectory) {
+      console.log("Got last anno directory from storage: ", storedAnnoDirectory)
+      setLastAnnotationDirectory(storedAnnoDirectory);
     }
     
     const storedConfig = localStorage.getItem('storedConfig');
@@ -148,8 +188,30 @@ function App() {
     })
   }
 
+  const makeLogTabContent = (tabData) => {
+    return (
+    <DockLayoutContext.Provider value={dockLayoutRef.current}>
+        <LogViewerPage tabData={tabData} file={tabData.fileName} id={tabData.id} 
+          extraMenus={
+            [
+              { 
+                title: "Split",
+                items: [
+                  { label: 'Right', action: ()=> splitTab(tabData.fileName, tabData.id, 'right')}, 
+                  { label: 'Left', action: ()=> splitTab(tabData.fileName, tabData.id, 'left')}, 
+                  { label: 'Up', action: ()=> splitTab(tabData.fileName, tabData.id, 'up')}, 
+                  { label: 'Down', action: ()=> splitTab(tabData.fileName, tabData.id, 'down')}, 
+                  { label: 'After', action: ()=> splitTab(tabData.fileName, tabData.id, 'after-tab')}, 
+                  { label: 'Before', action: ()=> splitTab(tabData.fileName, tabData.id, 'before-tab')}, 
+                ]
+              }
+            ]
+          }
+        />
+    </DockLayoutContext.Provider>)
+  }
 
-  const makeLogTab = (fileName) => {
+  const makeLogTab = (fileName, tabData=undefined) => {
     const file = fileCollection[fileName];
     console.log("MAKING TAB FOR FILE", file)
     
@@ -157,31 +219,14 @@ function App() {
     const tab = {
       id: id,
       title: file.name,
-      file: file.name,
+      fileName: file.name,
       closable: true,
       cached: true,
-      content: (
-        <DockLayoutContext.Provider value={dockLayoutRef.current}>
-            <LogViewerPage file={fileName} id={id} 
-              extraMenus={
-                [
-                  { 
-                    title: "Split",
-                    items: [
-                      { label: 'Right', action: ()=> splitTab(fileName, id, 'right')}, 
-                      { label: 'Left', action: ()=> splitTab(fileName, id, 'left')}, 
-                      { label: 'Up', action: ()=> splitTab(fileName, id, 'up')}, 
-                      { label: 'Down', action: ()=> splitTab(fileName, id, 'down')}, 
-                      { label: 'After', action: ()=> splitTab(fileName, id, 'after-tab')}, 
-                      { label: 'Before', action: ()=> splitTab(fileName, id, 'before-tab')}, 
-                    ]
-                  }
-                ]
-              }
-            />
-        </DockLayoutContext.Provider>
-      ),
-      group: "default",
+      filters: tabData?.filters,
+      scroll: tabData?.scroll || 0,
+      config: tabData?.config,
+      content: makeLogTabContent,
+      group: "logfile",
     }
 
     setFileCollection(old => {
@@ -213,7 +258,92 @@ function App() {
     dockLayoutRef.current.dockMove(tab, dockLayoutRef.current.getLayout().dockbox, "middle")
   }
 
-  const handleFileOpen = (event) => {
+  
+  const handleAnnotationFileOpen = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+
+      // Update last-used directory
+      if (file.webkitRelativePath) {
+        const directory = file.webkitRelativePath.substring(0, file.webkitRelativePath.lastIndexOf('/'));
+        setLastAnnotationDirectory(directory);
+        localStorage.setItem('lastAnnoDirectory', directory);
+      }
+
+      // Open file
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        let text = e.target.result;
+        
+        const sep = text.indexOf('---\n')
+        if (sep == -1) {
+          toast.error("Error parsing annotation file")
+          return
+        }
+
+        text = text.substring(sep+4)
+
+        const fileData = JSON.parse(text);
+        const layoutData = fileData.layout;
+        const files = fileData.fileCollection
+        if (!layoutData) {
+          toast.error("Error parsing annotation file: Layout not found")
+          return
+        }
+        if (!files) {
+          toast.error("Error parsing annotation file: File data not found")
+          return
+        }
+        let success = true;
+        Object.keys(files).forEach(key => {
+          const file = files[key]
+          const lines = file.lines.join('\n')
+          if (!file.lines) success = false;
+          const lineData = parseLines(lines)
+          files[key].lines = lineData 
+        })
+
+        if (success) {
+
+          //const tabs = GetAllTabsInGroup(dockLayoutRef.current.getLayout(), "logfile");
+          //console.log("Existing tabs", tabs);
+          setLayoutState(undefined)
+          //tabs.forEach(tab => dockLayoutRef.current.dockMove(tab, undefined, "remove"))
+
+          setTimeout(() =>  {
+            setFileCollection(files)
+            setTimeout(() => {
+              dockLayoutRef.current.loadLayout(layoutData)
+              toast("Loaded!")
+            } , 100)
+          }
+          , 100)
+
+
+        }
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  const parseLines = (text) => {
+    let earliestTime = undefined
+    let anyParseErrors = false;
+    const rtn = text.split("\n").map((line, ind) => {
+      const out = parseLine(line, ind, earliestTime)
+      if (out.datetime && !earliestTime) {
+        earliestTime = out.datetime
+      }
+      anyParseErrors |= !out.parseSuccess
+      return out
+    });
+    if (anyParseErrors) {
+      toast.error('Errors found during file parsing')
+    }
+    return rtn;
+  }
+
+  const handleLogFileOpen = (event) => {
     const file = event.target.files[0];
     if (file) {
 
@@ -221,6 +351,7 @@ function App() {
       if (file.webkitRelativePath) {
         const directory = file.webkitRelativePath.substring(0, file.webkitRelativePath.lastIndexOf('/'));
         setLastDirectory(directory);
+        console.log("Updating log directory", directory)
         localStorage.setItem('lastDirectory', directory);
       }
       
@@ -228,14 +359,7 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target.result;
-        let earliestTime = undefined
-        const linesArray = text.split("\n").map((line, ind) => {
-          const out = parseLine(line, ind, earliestTime)
-          if (out.datetime && !earliestTime) {
-            earliestTime = out.datetime
-          }
-          return out
-        });
+        const linesArray = parseLines(text)
         
         if (FileExists(file.name)) {
           UpdateFile(file, linesArray);
@@ -279,21 +403,22 @@ function App() {
       
   }
 
+  const MakeBookmarkTab = () => ({
+    id: 'window_bookmark',
+    title: "Bookmarks",
+    closable: true,
+    content: (
+      <AllFilesContext.Consumer>
+        {({allFiles, setAllFiles}) => (
+          <BookmarksWindow allFiles={allFiles} GetDockLayout={()=>dockLayoutRef.current} SetBookmark={SetBookmark}/>
+        )}
+      </AllFilesContext.Consumer>
+    ),
+    group: "windows",
+  })
   const OpenBookmarkTab = (keepClosed=false) => {
     const existing = dockLayoutRef.current.find('window_bookmark');
-    const newtab = {
-      id: 'window_bookmark',
-      title: "Bookmarks",
-      closable: true,
-      content: (
-        <AllFilesContext.Consumer>
-          {({allFiles, setAllFiles}) => (
-            <BookmarksWindow allFiles={allFiles} GetDockLayout={()=>dockLayoutRef.current} SetBookmark={SetBookmark}/>
-          )}
-        </AllFilesContext.Consumer>
-      ),
-      group: "windows",
-    }
+    const newtab = MakeBookmarkTab();
     if (existing) {
       //dockLayoutRef.current.updateTab('window_bookmark', newtab)
     }
@@ -303,7 +428,6 @@ function App() {
   }
 
   const OpenAddBookmark = (filename, line) => {
-    console.log("Add bookmark", filename, line)
     SetBookmark(filename, line, {
       message: "Bookmark"
     })
@@ -311,7 +435,6 @@ function App() {
   }
 
   const OpenBookmark = (filename, line) => {
-    console.log("Open bookmark", filename, line)
     OpenBookmarkTab();
   }
 
@@ -338,9 +461,7 @@ function App() {
     }
   }
 
-  const OpenAboutTab = () => {
-    const existing = dockLayoutRef.current.find('window_about');
-    const newtab = {
+  const MakeAboutTab = () => ({
       id: 'window_about',
       title: "About",
       closable: true,
@@ -348,7 +469,10 @@ function App() {
         <AboutTab />
       ),
       group: "windows",
-    }
+    })
+  const OpenAboutTab = () => {
+    const existing = dockLayoutRef.current.find('window_about');
+    const newtab = MakeAboutTab()
     if (existing) {
       //dockLayoutRef.current.updateTab('window_bookmark', newtab)
     }
@@ -364,13 +488,68 @@ function App() {
       title: "File",
       items: [
         { label: "Open...", action: () => {
-          const fileInput = document.querySelector('#fileInput');
+          const fileInput = document.querySelector('#logFileInput');
+          console.log("Last log dir: ", lastDirectory)
           if (lastDirectory) {
             fileInput.setAttribute("webkitDirectory", lastDirectory)
           }
           fileInput.click() 
-        }
+        },
       },
+        { label: "Save Annotated Files", action: () => {
+          SavingAnnotatedFile = true;
+          const layoutData = dockLayoutRef.current.saveLayout()
+          SavingAnnotatedFile = false;
+
+          const collection = {}
+          // simplify the files by un-parsing the lines
+          Object.keys(fileCollection).forEach(key => {
+            const file = fileCollection[key];
+            const out = {bookmarks: file.bookmarks, name: file.name}
+            out.lines = file.lines.map(line=>line.fulltext)
+            collection[key] = out;
+          })
+          
+          const data = {
+            layout: layoutData,
+            fileCollection: collection,
+          }
+          
+          let savedfile = JSON.stringify(data, null, 4)
+          savedfile = 
+`# README
+
+This is an annotated Unreal Engine log file.
+It is best loaded and viewed at ${document.location}
+
+---
+${savedfile}
+`
+          const blob = new Blob([savedfile], {type: "text/plain" })
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          let firstFileName = "UnrealEngine";
+          if (Object.keys(fileCollection).length > 0) {
+            firstFileName = fileCollection[Object.keys(fileCollection)[0]].name
+            firstFileName = firstFileName.replace('.log','')
+          }
+          link.download = firstFileName + '.annotated.log'
+          link.href = url;
+          link.click();
+        }},
+        { label: "Load Annotated File", action: () => {
+          if (firstTab || window.confirm("Loading a layout will lose your current state. Continue?")) {
+            const fileInput = document.querySelector('#annotationFileInput');
+            console.log("Last anno dir: ", lastAnnotationDirectory)
+            if (lastAnnotationDirectory) {
+              fileInput.setAttribute("webkitDirectory", lastAnnotationDirectory)
+            }
+            fileInput.click() 
+          }
+          else {
+            toast('Cancelled Load')
+          }
+        }},
       ],
     },
     {
@@ -428,9 +607,63 @@ function App() {
     }
   };
 
+  const saveTab = (tabData) => {
+    console.log('SAVE TAB', SavingAnnotatedFile, tabData)
+    if (!SavingAnnotatedFile) return tabData;
+
+    let {id, fileName, group, title, filters, scroll, config} = tabData;
+    
+    if (group == 'windows') return { group: 'remove' };
+
+    return {id, fileName, group, title, filters, scroll, fromload:true , config};
+  }
+
+  const loadTab = (savedTab) => {
+    console.log("LOAD TAB", savedTab)
+    if (savedTab.group == 'remove') {
+      console.log("load - Removing")
+      return undefined;
+    }
+
+    if (savedTab.group == "logfile" && savedTab.fromload) {
+      console.log('load - Making tab - ')
+      return makeLogTab(savedTab.fileName, savedTab)
+    }
+
+    if (savedTab.fileName && !(savedTab.fileName in fileCollection)) {
+      console.log("load - File not in collection, removing")
+      return undefined;
+    }
+
+    return savedTab;
+  }
+
+  const onLayoutChange = (newLayout, currentTabId, direction)=> {
+    if (direction == 'remove') {
+      const fileName = dockLayoutRef.current.find(currentTabId)?.fileName
+      if (fileName) {
+        const tabs = GetAllTabsForFile(newLayout, fileName);
+        if (tabs.length == 0) {
+          setLayoutState(newLayout)
+          setTimeout(() => {
+            setFileCollection(old => {
+              const update = {...old}
+              delete update[fileName]
+              return update;
+            })
+            console.log("Updating file collection, no longer using", fileName)
+          }, 100) // need to wait until layout updates so that changing the collection doesn't break tabs...
+          return;
+        }
+      }
+    }
+    setLayoutState(newLayout)
+  }
+
   return (
     <>
-    <input ref={inputRef} webkitdirectory id="fileInput" type="file" accept="text/*" style={{ display: 'none' }} onChange={handleFileOpen} />
+    <input webkitdirectory id="logFileInput" type="file" accept="text/*" style={{ display: 'none' }} onChange={handleLogFileOpen} />
+    <input webkitdirectory id="annotationFileInput" type="file" accept="text/*" style={{ display: 'none' }} onChange={handleAnnotationFileOpen} />
     <LogViewerHeader menuConfig={menuConfig} />
 
     <div className="tabContainer">
@@ -438,7 +671,7 @@ function App() {
           <BookmarkFunctionsContext.Provider value={{OpenAddBookmark, OpenBookmark}}>
             <SavedFiltersContext.Provider value={[savedFilters, setSavedFilters, OpenFiltersTab]}>
               <AllFilesContext.Provider value={{allFiles:fileCollection, setAllFiles:setFileCollection}}>
-                <DockLayout ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
+                <DockLayout layout={layoutState} onLayoutChange={onLayoutChange} loadTab={loadTab} saveTab={saveTab} ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
               </AllFilesContext.Provider>
             </SavedFiltersContext.Provider>
           </BookmarkFunctionsContext.Provider>
