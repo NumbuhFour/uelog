@@ -16,6 +16,7 @@ import { AboutTab } from "./AboutTab";
 import { IoMdClose } from "react-icons/io";
 import { TbArrowsMaximize, TbWindowMaximize } from "react-icons/tb";
 import { FaWindowMinimize } from "react-icons/fa";
+import { AppVersion, FileVersion } from "./Constants";
 
 const panelExtra = (panelData, context) => {
 
@@ -511,6 +512,8 @@ function App() {
           })
           
           const data = {
+            appVersion: AppVersion,
+            FileVersion: FileVersion,
             layout: layoutData,
             fileCollection: collection,
           }
