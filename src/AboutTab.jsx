@@ -13,6 +13,8 @@ Split a file for comparison with the **Split** option in the log window.
 
 Version v${AppVersion}
 
+[Github](https://github.com/NumbuhFour/uelog)
+
 ## Features
 - Multi-window for multiple filters or logs
 - Synced scrolling with adjacent filtered views
