@@ -1,6 +1,7 @@
 {
   "name": "ue-logviewer",
   "version": "0.1.0",
+  "fileformatVersion": "1.0",
   "private": true,
   "dependencies": {
     "cra-template": "1.2.0",
