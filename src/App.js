@@ -260,6 +260,54 @@ function App() {
   }
 
   
+  const parseAnnotationFile = (text) => {
+    const sep = text.indexOf('---\n')
+    if (sep == -1) {
+      toast.error("Error parsing annotation file")
+      return
+    }
+
+    text = text.substring(sep+4)
+
+    const fileData = JSON.parse(text);
+    const layoutData = fileData.layout;
+    const files = fileData.fileCollection
+    if (!layoutData) {
+      toast.error("Error parsing annotation file: Layout not found")
+      return
+    }
+    if (!files) {
+      toast.error("Error parsing annotation file: File data not found")
+      return
+    }
+    let success = true;
+    Object.keys(files).forEach(key => {
+      const file = files[key]
+      const lines = file.lines.join('\n')
+      if (!file.lines) success = false;
+      const lineData = parseLines(lines)
+      files[key].lines = lineData 
+    })
+
+    if (success) {
+
+      //const tabs = GetAllTabsInGroup(dockLayoutRef.current.getLayout(), "logfile");
+      //console.log("Existing tabs", tabs);
+      setLayoutState(undefined)
+      //tabs.forEach(tab => dockLayoutRef.current.dockMove(tab, undefined, "remove"))
+
+      setTimeout(() =>  {
+        setFileCollection(files)
+        setTimeout(() => {
+          dockLayoutRef.current.loadLayout(layoutData)
+          toast("Loaded!")
+        } , 100)
+      }
+      , 100)
+
+
+    }
+  }
   const handleAnnotationFileOpen = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -275,53 +323,7 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         let text = e.target.result;
-        
-        const sep = text.indexOf('---\n')
-        if (sep == -1) {
-          toast.error("Error parsing annotation file")
-          return
-        }
-
-        text = text.substring(sep+4)
-
-        const fileData = JSON.parse(text);
-        const layoutData = fileData.layout;
-        const files = fileData.fileCollection
-        if (!layoutData) {
-          toast.error("Error parsing annotation file: Layout not found")
-          return
-        }
-        if (!files) {
-          toast.error("Error parsing annotation file: File data not found")
-          return
-        }
-        let success = true;
-        Object.keys(files).forEach(key => {
-          const file = files[key]
-          const lines = file.lines.join('\n')
-          if (!file.lines) success = false;
-          const lineData = parseLines(lines)
-          files[key].lines = lineData 
-        })
-
-        if (success) {
-
-          //const tabs = GetAllTabsInGroup(dockLayoutRef.current.getLayout(), "logfile");
-          //console.log("Existing tabs", tabs);
-          setLayoutState(undefined)
-          //tabs.forEach(tab => dockLayoutRef.current.dockMove(tab, undefined, "remove"))
-
-          setTimeout(() =>  {
-            setFileCollection(files)
-            setTimeout(() => {
-              dockLayoutRef.current.loadLayout(layoutData)
-              toast("Loaded!")
-            } , 100)
-          }
-          , 100)
-
-
-        }
+        parseAnnotationFile(text)
       };
       reader.readAsText(file);
     }
@@ -360,6 +362,22 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target.result;
+
+        
+        if (text.indexOf('---\n') != 0 && text.indexOf("\"fileCollection\"") != 0) {
+          
+          const sep = text.indexOf('---\n')
+          const jsontext = text.substring(sep+4)
+          try {
+            const fileData = JSON.parse(jsontext);
+            if (fileData && window.confirm("Open as annotated file? \nWarning: you will lose your current workspace")) {
+              parseAnnotationFile(text)
+              return;
+            }
+          }
+          catch(e){}
+        }
+
         const linesArray = parseLines(text)
         
         if (FileExists(file.name)) {
