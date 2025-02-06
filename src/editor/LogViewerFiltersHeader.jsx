@@ -73,7 +73,12 @@ export function MatchesFilter(contentParts, filter, isBookmarked) {
             return filter.value == '' || contentParts.fulltext?.toLowerCase().includes(filter.value.toLowerCase())
         case 'textMatch': // Regex match full text
         //console.log('MATCH textMatch')
-            return filter.value == '' || contentParts.fulltext.match(new RegExp(filter.value)) != null
+            try {
+                return filter.value == '' || contentParts.fulltext.match(new RegExp(filter.value)) != null
+            }
+            catch(e) {
+                return true;
+            }
         case 'messageIncludes':
             //console.log('MATCH messageIncludes')
             return filter.value == '' || contentParts.message?.toLowerCase().includes(filter.value.toLowerCase())
