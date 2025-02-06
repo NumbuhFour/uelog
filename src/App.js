@@ -78,8 +78,9 @@ const DefaultSavedFilters = [
   {"title":"Errors & Warnings","description":"Filter description","guid":"df802a28-f401-4d7a-86b0-f4a25730caef","type":"root","children":[{"type":"or","children":[{"type":"verbosity","children":[],"value":"fatal"},{"type":"verbosity","children":[],"value":"error"},{"type":"verbosity","children":[],"value":"warning"}],"value":""}]}
 ]
 
-
 let SavingAnnotatedFile = false
+
+let postFileChangeCallback = []
 
 function App() {
   const dockLayoutRef = useRef(null);
@@ -96,6 +97,13 @@ function App() {
   const [fileCollection, setFileCollection] = useState({})
 
   const [savedFilters, setSavedFilters] = useState(DefaultSavedFilters)
+
+  useEffect(()=>{
+    console.log("Calling postFileChange callbacks:", postFileChangeCallback.length, "Files:", Object.keys(fileCollection))
+
+    for (let callback of postFileChangeCallback) callback(fileCollection)
+    postFileChangeCallback = []
+  }, [ fileCollection ])
 
 
   const OnFirstTabOpened = () => {
@@ -119,8 +127,9 @@ function App() {
       old[file.name] = newData[file.name]
       return newData;
     })
+    return new Promise( (res) => postFileChangeCallback.push(res))
   }
-  const UpdateFile = (file, parsedLines) => {
+  const UpdateFileLines = (file, parsedLines, callback) => {
 
     setFileCollection(old => {
       const newData={...old}
@@ -128,6 +137,7 @@ function App() {
       old[file.name].lines = parsedLines
       return newData;
     })
+    return new Promise( (res) => postFileChangeCallback.push(res))
   }
 
   const FileExists = (fileName) => {
@@ -180,13 +190,14 @@ function App() {
     }
   }, [savedFilters]);
 
-  const updateFile = (filename, value) => {
+  const UpdateFileData = (filename, value) => {
     setFileCollection(old => {
       const newData = {...old}
       newData[filename] = value;
       old[filename] = value;
       return newData;
     })
+    return new Promise( (res) => postFileChangeCallback.push(res))
   }
 
   const makeLogTabContent = (tabData) => {
@@ -212,9 +223,9 @@ function App() {
     </DockLayoutContext.Provider>)
   }
 
-  const makeLogTab = (fileName, tabData=undefined) => {
-    const file = fileCollection[fileName];
-    console.log("MAKING TAB FOR FILE", file)
+  const makeLogTab = (fileName, tabData=undefined, overrideFileCollection) => {
+    const file = (overrideFileCollection ? overrideFileCollection:fileCollection)[fileName];
+    console.log("MAKING TAB FOR FILE", file, fileName, " Collection: ", Object.keys((overrideFileCollection ? overrideFileCollection:fileCollection)), overrideFileCollection)
     
     const id = file.name + "||" + Math.random() + "||" + file.nextId;
     const tab = {
@@ -253,8 +264,8 @@ function App() {
     }
   }
 
-  const addTabForFile = (fileName) => {
-    const tab = makeLogTab(fileName);
+  const addTabForFile = (fileName, overrideFileCollection) => {
+    const tab = makeLogTab(fileName, undefined, overrideFileCollection);
     OnFirstTabOpened();
     dockLayoutRef.current.dockMove(tab, dockLayoutRef.current.getLayout().dockbox, "middle")
   }
@@ -347,8 +358,13 @@ function App() {
   }
 
   const handleLogFileOpen = (event) => {
-    const file = event.target.files[0];
-    if (file) {
+    console.log("Opening files", event.target.files)
+    
+    // Parse all first
+    const fileData = {}
+    const loadPromises = []
+    for (let file of event.target.files){
+      if (!file) continue
 
       // Update last-used directory
       if (file.webkitRelativePath) {
@@ -357,46 +373,61 @@ function App() {
         console.log("Updating log directory", directory)
         localStorage.setItem('lastDirectory', directory);
       }
-      
-      // Open file
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target.result;
 
-        
+      loadPromises.push(new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          fileData[file.name] = { text, file };
+          res([file.name, text]);
+        }
+        reader.readAsText(file);
+      }))
+    }
+    Promise.all(loadPromises)
+    .then(()=> {
+      console.log("All files loaded")
+      // Find any that looks like a annotation file first
+      for (let name in fileData) {
+        const { text, file } = fileData[name]
         if (text.indexOf('---\n') != 0 && text.indexOf("\"fileCollection\"") != 0) {
           
           const sep = text.indexOf('---\n')
           const jsontext = text.substring(sep+4)
           try {
             const fileData = JSON.parse(jsontext);
-            if (fileData && window.confirm("Open as annotated file? \nWarning: you will lose your current workspace")) {
+            if (fileData && window.confirm(`Open ${name} as annotated file? \nWarning: you will lose your current workspace`)) {
               parseAnnotationFile(text)
               return;
             }
           }
           catch(e){}
         }
+      }
 
+      // No annotation files accepted, load all as logs
+      for (let name in fileData) {
+        const { text, file } = fileData[name]
         const linesArray = parseLines(text)
         
-        if (FileExists(file.name)) {
-          UpdateFile(file, linesArray);
-          addTabForFile(file.name);
+        if (FileExists(name)) {
+          console.log('File already exists in collection:', name)
+          UpdateFileLines(file, linesArray)
+          .then((val) => addTabForFile(name, val));
         }
         else {
+          console.log('File new to collection collection:', name)
           AddFile(file, linesArray)
-          addTabForFile(file.name);
+          .then((val)=> addTabForFile(name, val));
         }
-      };
-      reader.readAsText(file);
-    }
+      }
+    })
   };
 
   const SetBookmark = (filename, line, data) => {
     let file = fileCollection[filename];
     file.bookmarks[line] = data;
-    updateFile(filename, file)
+    UpdateFileData(filename, file)
     const tabs = GetAllTabsForFile(dockLayoutRef.current.getLayout(), filename);
     tabs.forEach(i => {
       if (i?.forceUpdate)
