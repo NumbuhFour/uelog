@@ -59,7 +59,11 @@ export const AddHighlight = (highlights, setHighlights, line, file, mode) => {
         const filename = (typeof file === 'string') ? file : file.name
 
         setHighlights((old) => {
-            return old.filter(e => e.filename != filename || e.mode != mode)
+            return old.filter(e => {
+                if (e.filename != filename) return true;
+                if (e.mode == mode || (mode == EHighlightModes.SEARCH_NONFOCUS && e.mode == EHighlightModes.SEARCH_FOCUS))
+                    return false;
+            })
         })
         return;
     }
