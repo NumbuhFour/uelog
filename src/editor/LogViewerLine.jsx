@@ -4,8 +4,9 @@ import * as ReactDOM from "react-dom";
 import { CiBookmarkPlus  } from "react-icons/ci";
 import { BsFillBookmarkPlusFill } from "react-icons/bs";
 import { FaPlus, FaBookmark } from "react-icons/fa";
-import { BookmarkFunctionsContext, MyFilesContext } from "../GlobalContext";
+import { BookmarkFunctionsContext, HighlightsContext, MyFilesContext } from "../GlobalContext";
 import { Tooltip } from "react-tooltip";
+import { GetHighlightClasses } from "./HighlightUtils";
 
 function generateColorFromLogCat(str) {
     let hash = 0;
@@ -64,7 +65,7 @@ function RenderDeltaTime(delta) {
     return out;
 }
 
-export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentParts, BookmarkBtn}) => {
+export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentParts, BookmarkBtn, classes}) => {
 
 
     return (
@@ -75,6 +76,7 @@ export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentPart
                 contentParts.type,
                 getConfig('nohover', false) ? "nohover":"",
                 getConfig('nobg', false) ? "nobg":"",
+                classes,
             ].join(' ')}
             style={style}>
             { contentParts.type == 'line' && (<>
@@ -104,6 +106,7 @@ export const LogViewerLine = ({ key, config, contentParts, style }) => {
 
     const { myFile, setMyFile } = useContext(MyFilesContext);
     const { OpenBookmark, OpenAddBookmark } = useContext(BookmarkFunctionsContext);
+    const [highlights, setHighlights] = useContext(HighlightsContext)
 
     if (!myFile) return <></>
 
@@ -127,6 +130,6 @@ export const LogViewerLine = ({ key, config, contentParts, style }) => {
     }
 
     return (
-        <LogViewerLineRender key={key} myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts}/>
+        <LogViewerLineRender key={key} myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts} classes={GetHighlightClasses(highlights, contentParts, myFile)}/>
     )
 };

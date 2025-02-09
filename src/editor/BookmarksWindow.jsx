@@ -5,13 +5,15 @@ import { GetAllTabsForFile } from "./DockUtils";
 import { IoMdReturnRight } from "react-icons/io";
 import { LogViewerLineRender } from "./LogViewerLine";
 import { FaTrash } from "react-icons/fa";
-import { AllFilesContext } from "../GlobalContext";
+import { AllFilesContext, HighlightsContext } from "../GlobalContext";
 import Collapsible from "../Collapsible";
+import { AddHighlight, EHighlightModes } from "./HighlightUtils";
 
 
 export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
 
     const {allFiles, setAllFiles} = useContext(AllFilesContext)
+    const [highlights, setHighlights] = useContext(HighlightsContext)
 
 
 
@@ -27,6 +29,8 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
             if (tab.NeighborScroll)
                 tab.NeighborScroll(allFiles[filename].lines[line])
         })
+
+        AddHighlight(highlights, setHighlights, line, filename, EHighlightModes.BOOKMARK);
     }
 
     const RemoveBookmark = (filename, line) => {
@@ -73,7 +77,7 @@ export const BookmarksWindow = ( { GetDockLayout, SetBookmark }) => {
                                 </div>
                                 <div className="preview">
                                 <a title="Go to line" className="smbtn jump" onClick={()=>JumpToBookmark(filename, line)}> <IoMdReturnRight /></a>
-                                    <a onClick={()=>JumpToBookmark(filename,line)}><LogViewerLineRender getConfig={getConfig} contentParts={file.lines[line-1]}/></a>
+                                    <span><a onClick={()=>JumpToBookmark(filename,line)}><LogViewerLineRender getConfig={getConfig} contentParts={file.lines[line-1]}/></a></span>
                                 </div>
                             </div>
                         </>)

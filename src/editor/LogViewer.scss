@@ -1,7 +1,15 @@
 
 @import "../style/index-dark";
 
+@keyframes grow-shrink {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); } /* Slight growth */
+    100% { transform: scale(1); }
+  }
+  
+
 .line {
+    transform-origin: left;
 
     &.concat {
         padding-left: 2em;
@@ -45,6 +53,22 @@
                 &.add {
                     opacity: unset;
                 }
+            }
+        }
+
+        &.flash, &.BOOKMARK, &.SEARCH_FOCUS, &.SYNCHOVER {
+            animation: grow-shrink 0.3s ease-in-out;
+            
+            background-color: $line-highlight-bg !important;
+            .message {
+                background-color: $line-highlight-bg !important;
+            }
+        }
+
+        &.SEARCH_NONFOCUS {
+            background-color: $line-search-nonfocus-bg;
+            .message {
+                background-color: $line-search-nonfocus-bg;
             }
         }
     }

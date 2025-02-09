@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext, forwardRef } from "react";
 
 import { LogViewerLine } from "./LogViewerLine";
 import { LogViewerHeader } from "./LogViewerHeader";
@@ -6,10 +6,14 @@ import { FixedSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 import "./LogViewer.scss";
-import { AllFilesContext, GlobalConfigContext, DockLayoutContext, MyFilesContext } from "../GlobalContext";
+import { AllFilesContext, GlobalConfigContext, DockLayoutContext, MyFilesContext, HighlightsContext, SearchRateLimit } from "../GlobalContext";
 import { LogViewerFiltersHeader, MatchesFilter } from "./LogViewerFiltersHeader";
 import { GetNeighboringPanelsForTab, GetPanelForTab } from "./DockUtils";
 import { Tooltip } from "react-tooltip";
+
+import { useHotkeys } from "react-hotkeys-hook";
+import { SearchBox } from "./SearchBox";
+import { AddHighlight, EHighlightModes, GetHighlightState } from "./HighlightUtils";
 
 let ConfigDefault = {
   debugLine: false,
@@ -50,6 +54,8 @@ export const LogViewerPage = (props) => {
   const { allFiles, setAllFiles} = useContext(AllFilesContext);
   if (!allFiles[file])
     console.error("File not found in collection: ", file)
+  const [ highlights, setHighlights ] = useContext(HighlightsContext);
+  const [ searchIndex, setSearchIndex ] = useState(0);
 
   const dockLayoutContext = useContext(DockLayoutContext);
   const [ filters, setFilters ] = useState(tabData.filters ? tabData.filters : { type: "root", children: [ { type: "textIncludes", children: [], value: ""}] });
@@ -62,6 +68,48 @@ export const LogViewerPage = (props) => {
   let forceMove = false;
 
   const [ lines, setLines ] = useState( (allFiles && file in allFiles) ? allFiles[file].lines:[] );
+  const [ searchLines, setSearchLines ] = useState([]);
+
+  const UpdateSearchLines = () => {
+    clearTimeout(SearchRateLimit.handle)
+
+    SearchRateLimit.handle = setTimeout(() => {
+
+      // Reset the active search selection
+      const matching = lines.filter(line => {
+        const hl = GetHighlightState(highlights, line, file)
+        return hl.find(e=>e.mode==EHighlightModes.SEARCH_NONFOCUS);
+      })
+
+      if (JSON.stringify(matching) == JSON.stringify(searchLines)) return;
+
+      setSearchLines(matching)
+      setSearchIndex(0);
+      console.log(`Updated search lines. ${matching.length }`)
+      clearTimeout(SearchRateLimit.handle)
+    }, 200)
+  }
+
+  useEffect(() => {
+    UpdateSearchLines();
+  }, [ lines, highlights ] )
+
+  useEffect(()=>{
+    if (searchLines.length == 0) return;
+
+    if (searchIndex < 0) {
+      setSearchIndex(searchLines.length - 1)
+      return;
+    }
+    if (searchIndex >= searchLines.length) {
+      setSearchIndex(0)
+      return;
+    }
+
+    AddHighlight(highlights, setHighlights, searchLines[searchIndex], file, EHighlightModes.SEARCH_FOCUS);
+    NeighborScroll(searchLines[searchIndex], true)
+
+  }, [searchIndex, searchLines])
 
   const setConfigAttribute = (attribute, value) => {
     setConfig(prevConfig => 
@@ -75,6 +123,9 @@ export const LogViewerPage = (props) => {
     tabData.NeighborScroll = NeighborScroll;
     tabData.ForceUpdate = () => {
       listRef.current?.forceUpdate()
+    }
+    tabData.ForceShowSearch = () => {
+      searchBoxRef.current.focus()
     }
 
     tabData.config = config;
@@ -235,9 +286,8 @@ export const LogViewerPage = (props) => {
     })
   }
 
-  const NeighborScroll = (targetLine) => {
-    console.log('NEIGHBOR SCROLL!', targetLine)
-    if (!targetLine || !config.syncScroll) return;
+  const NeighborScroll = (targetLine, force) => {
+    if (!force && (!targetLine || !config.syncScroll)) return;
 
     forceMove = true;
     let scrollIndex  = 0;
@@ -264,12 +314,29 @@ export const LogViewerPage = (props) => {
 
   }, [])
 
+  const searchBoxRef = useRef(null);
+  //const ForwardedSearchBox = forwardRef(SearchBox)
+  let rootRef;
+
+  const searchRef = useHotkeys('ctrl+f, cmd+f', (h, e) => {
+    if (rootRef.current.querySelector(':hover'))
+      searchBoxRef.current.focus();
+  }, {preventDefault:true})
+  
+  rootRef = useRef(searchRef);
+
+
+  const OnNextSearch = (change) => {
+    console.log("SEARCH NEXT ", change, searchIndex)
+    setSearchIndex(searchIndex + change)
+  }
+
   return (
     <>
     <MyFilesContext.Provider value={{myFile: (allFiles && file in allFiles) ? allFiles[file]:undefined, setMyFile: updateFile.bind(this, file)}}>
       <LogViewerHeader menuConfig={menuConfig} />
       { showFilters && <LogViewerFiltersHeader logCategories={logCategories} conditionTree={filters} setConditionTree={UpdateFilters} /> }
-    <div className="LogViewer">
+    <div className="LogViewer" ref={rootRef} tabIndex={-1}>
       <div className="content">
         <AutoSizer>
           {({ height, width }) => (
@@ -286,6 +353,7 @@ export const LogViewerPage = (props) => {
           )}
         </AutoSizer>
       </div>
+      <SearchBox inref={searchBoxRef} index={searchIndex} total={searchLines.length} onNext={OnNextSearch} />
       <Tooltip place="bottom-start" anchorSelect=".lineTooltip"/>
     </div>
     </MyFilesContext.Provider>

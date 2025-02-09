@@ -6,7 +6,7 @@ import { LogViewerHeader } from "./editor/LogViewerHeader";
 import "./App.scss";
 
 import "./editor/LogViewer.scss";
-import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalConfigContext, MyFilesContext, SavedFiltersContext } from "./GlobalContext";
+import { AllFilesContext, BookmarkFunctionsContext, DockLayoutContext, GlobalConfigContext, HighlightsContext, MyFilesContext, SavedFiltersContext } from "./GlobalContext";
 import { GetAllTabs, GetAllTabsForFile, GetAllTabsInGroup, GetPanelForTab } from "./editor/DockUtils";
 import { BookmarksWindow } from "./editor/BookmarksWindow";
 
@@ -17,6 +17,7 @@ import { IoMdClose } from "react-icons/io";
 import { TbArrowsMaximize, TbWindowMaximize } from "react-icons/tb";
 import { FaWindowMinimize } from "react-icons/fa";
 import { AppVersion, FileVersion } from "./Constants";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const panelExtra = (panelData, context) => {
 
@@ -92,6 +93,8 @@ function App() {
   const [lastDirectory, setLastDirectory] = useState('');
   const [lastAnnotationDirectory, setLastAnnotationDirectory] = useState('');
   const [layoutState, setLayoutState] = useState()
+
+  const [highlights, setHighlights] = useState([])
 
 
   const [fileCollection, setFileCollection] = useState({})
@@ -301,6 +304,7 @@ function App() {
     })
 
     if (success) {
+      setHighlights([])
 
       //const tabs = GetAllTabsInGroup(dockLayoutRef.current.getLayout(), "logfile");
       //console.log("Existing tabs", tabs);
@@ -712,20 +716,38 @@ ${savedfile}
     setLayoutState(newLayout)
   }
 
+  let testflop = false;
+
+  // Not working
+  /*useHotkeys(['ctrl+f','cmd+f'], (e, handler) => {
+    // The app root got ctrl+f, not a logfile
+    // So if there are logfile tabs, but none are focused, focus one and open its search
+    const focusedPanel = document.querySelector('.doc-panel:focus-within');
+    if (!focusedPanel)  {
+      const logfiles = GetAllTabsInGroup(dockLayoutRef.current.getLayout(), 'logfile');
+
+      if (logfiles.length > 0) {
+        logfiles[0].ForceShowSearch()
+      }
+    }
+  }, { preventDefault: ()=> GetAllTabsInGroup(dockLayoutRef.current.getLayout(), 'logfile').length > 0 });*/
+
   return (
     <>
-    <input webkitdirectory id="logFileInput" type="file" accept="text/*" style={{ display: 'none' }} onChange={handleLogFileOpen} />
+    <input webkitdirectory id="logFileInput" type="file" multiple accept="text/*" style={{ display: 'none' }} onChange={handleLogFileOpen} />
     <input webkitdirectory id="annotationFileInput" type="file" accept="text/*" style={{ display: 'none' }} onChange={handleAnnotationFileOpen} />
     <LogViewerHeader menuConfig={menuConfig} />
 
     <div className="tabContainer">
         <GlobalConfigContext.Provider value={globalConfig}>
           <BookmarkFunctionsContext.Provider value={{OpenAddBookmark, OpenBookmark}}>
-            <SavedFiltersContext.Provider value={[savedFilters, setSavedFilters, OpenFiltersTab]}>
-              <AllFilesContext.Provider value={{allFiles:fileCollection, setAllFiles:setFileCollection}}>
-                <DockLayout layout={layoutState} onLayoutChange={onLayoutChange} loadTab={loadTab} saveTab={saveTab} ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
-              </AllFilesContext.Provider>
-            </SavedFiltersContext.Provider>
+            <HighlightsContext.Provider value={[highlights, setHighlights]}>
+              <SavedFiltersContext.Provider value={[savedFilters, setSavedFilters, OpenFiltersTab]}>
+                <AllFilesContext.Provider value={{allFiles:fileCollection, setAllFiles:setFileCollection}}>
+                  <DockLayout layout={layoutState} onLayoutChange={onLayoutChange} loadTab={loadTab} saveTab={saveTab} ref={dockLayoutRef} dropMode={globalConfig.dragEdges ? 'edge':''} defaultLayout={defaultLayout} groups={groups}/>
+                </AllFilesContext.Provider>
+              </SavedFiltersContext.Provider>
+            </HighlightsContext.Provider>
           </BookmarkFunctionsContext.Provider>
       </GlobalConfigContext.Provider>
     </div>

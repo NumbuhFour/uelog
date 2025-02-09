@@ -92,7 +92,6 @@ function GetAllTabsForFile_Internal(ParentData, filename) {
 }
 export function GetAllTabsForFile(layoutData, filename) {
     let out = []
-    console.log('Get all tabs for file asd!', filename, layoutData.dockbox)
     out = out.concat(GetAllTabsForFile_Internal(layoutData.dockbox, filename))
     out = out.concat(GetAllTabsForFile_Internal(layoutData.floatbox, filename))
     out = out.concat(GetAllTabsForFile_Internal(layoutData.maxbox, filename))
