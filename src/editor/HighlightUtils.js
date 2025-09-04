@@ -31,7 +31,7 @@ export const GetHighlightState = (highlights, line, file) => {
         if (hl.mode == EHighlightModes.SEARCH_NONFOCUS)
         {
             //if (line.fulltext.toLowerCase().indexOf(hl.linenumber.toLowerCase()) != -1) console.log('MATCH ', line) 
-            return line.fulltext.toLowerCase().indexOf(hl.linenumber.toLowerCase()) != -1;
+            return line?.fulltext?.toLowerCase().indexOf(hl.linenumber.toLowerCase()) != -1;
         }
         return hl.linenumber == line.linenumber && hl.filename == filename
     })

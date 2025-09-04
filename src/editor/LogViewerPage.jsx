@@ -14,6 +14,7 @@ import { Tooltip } from "react-tooltip";
 import { useHotkeys } from "react-hotkeys-hook";
 import { SearchBox } from "./SearchBox";
 import { AddHighlight, EHighlightModes, GetHighlightState } from "./HighlightUtils";
+import { MakeSavePromptWindow } from "./SavePrompt";
 
 let ConfigDefault = {
   debugLine: false,
@@ -50,6 +51,7 @@ export const LogViewerPage = (props) => {
    const { tabData, file, id, extraMenus=[] } = props
   const [config, setConfig] = useState(tabData.config || ConfigDefault);
   const [showFilters, setShowFilters] = useState(false);
+  const [showSave, setShowSave] = useState(false);
   const globalConfigContext = useContext(GlobalConfigContext);
   const { allFiles, setAllFiles} = useContext(AllFilesContext);
   if (!allFiles[file])
@@ -138,6 +140,16 @@ export const LogViewerPage = (props) => {
   const menuConfig = [
     ...extraMenus,
     {
+      title: "File",
+      items: [
+        { label: <span> Save Filtered </span>, action: () => {
+          // dump text to console
+          const filtered = GetFilteredLines(allFiles[file].lines, null, true)
+          MakeSavePromptWindow(dockLayoutContext, filtered.lines, file)
+        } },
+      ],
+    },
+    {
       title: "Config",
       items: [
         { label: <span> {config.syncScroll ? "☑":"☐"} Sync Scrolling with Neighbors </span>, action: () => { setConfigAttribute('syncScroll', !config.syncScroll); return true; } },
@@ -197,29 +209,24 @@ export const LogViewerPage = (props) => {
     setLogCategories([''].concat(Object.keys(logCategoryCounts).sort()))
   }
 
-  useEffect(() => {
-    if (!allFiles || !(file in allFiles)) return;
-
+  const GetFilteredLines = (alllines, inStats, showOmissions) => {
     let concatenationInd = 0;
-    let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
-    setLines(allFiles[file].lines.reduce((acc, line, ind) => {
+    const outLines = alllines.reduce((acc, line, ind) => {
 
       const matches = MatchesFilter(line, filters, line.linenumber in allFiles[file].bookmarks);
         
-      if (line.verbosity == "Warning") {
-        statisticsCopy.warnings_total++;
-        if (matches) statisticsCopy.warnings_match++;
+      if (inStats && line.verbosity == "Warning") {
+        inStats.warnings_total++;
+        if (matches) inStats.warnings_match++;
       }
-      if (line.verbosity == "Error" || line.verbosity == "Fatal") {
-        statisticsCopy.errors_total++;
-        if (matches) statisticsCopy.errors_match++;
+      if (inStats && line.verbosity == "Error" || line.verbosity == "Fatal") {
+        inStats.errors_total++;
+        if (matches) inStats.errors_match++;
       }
 
       if (matches) {
-        
-
         const delta = ind - concatenationInd;
-        if (delta > 1 && globalConfigContext.showOmissions) {
+        if (delta > 1 && showOmissions) {
           acc.push({
             type:"concat",
             numlines: delta
@@ -229,7 +236,19 @@ export const LogViewerPage = (props) => {
         concatenationInd = line.linenumber
       }
       return acc;
-    }, []))
+    }, [])
+
+    return {concatenationInd, lines:outLines}
+  }
+
+  useEffect(() => {
+    if (!allFiles || !(file in allFiles)) return;
+
+    let concatenationInd = 0;
+    let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
+    const filtered = GetFilteredLines(allFiles[file].lines, statisticsCopy, globalConfigContext.showOmissions)
+    concatenationInd = filtered.concatenationInd;
+    setLines(filtered.lines)
 
     statisticsCopy.lines_total = allFiles[file].lines.length;
     statisticsCopy.lines_match = lines.length;

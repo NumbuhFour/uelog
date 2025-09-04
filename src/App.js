@@ -76,7 +76,8 @@ const GlobalConfigDefault = {
 }
 
 const DefaultSavedFilters = [
-  {"title":"Errors & Warnings","description":"Filter description","guid":"df802a28-f401-4d7a-86b0-f4a25730caef","type":"root","children":[{"type":"or","children":[{"type":"verbosity","children":[],"value":"fatal"},{"type":"verbosity","children":[],"value":"error"},{"type":"verbosity","children":[],"value":"warning"}],"value":""}]}
+  {"title":"Errors & Warnings","description":"Filter description","guid":"df802a28-f401-4d7a-86b0-f4a25730caef","type":"root","children":[{"type":"or","children":[{"type":"verbosity","children":[],"value":"fatal"},{"type":"verbosity","children":[],"value":"error"},{"type":"verbosity","children":[],"value":"warning"}],"value":""}]},
+  {"title":"Profile GPU (LogRHI)","description":"Filter description","guid":"26337771-cf5b-4b8d-836d-a723388178fc","type":"root","children":[{"type":"category","children":[],"value":"LogRHI"}]}
 ]
 
 let SavingAnnotatedFile = false
@@ -716,6 +717,16 @@ ${savedfile}
     setLayoutState(newLayout)
   }
 
+  const onContainerClick = (e) => {
+    const clicked_box = e.target.closest('.dock');
+    console.log("Click!", clicked_box)
+    const prompt = dockLayoutRef.current.find('prompt')
+    if (clicked_box && !clicked_box.querySelector('#prompt') && prompt)
+    {
+      dockLayoutRef.current.dockMove(prompt, null, "remove")
+    }
+  }
+
   let testflop = false;
 
   // Not working
@@ -738,7 +749,7 @@ ${savedfile}
     <input webkitdirectory id="annotationFileInput" type="file" accept="text/*" style={{ display: 'none' }} onChange={handleAnnotationFileOpen} />
     <LogViewerHeader menuConfig={menuConfig} />
 
-    <div className="tabContainer">
+    <div className="tabContainer" onClick={onContainerClick}>
         <GlobalConfigContext.Provider value={globalConfig}>
           <BookmarkFunctionsContext.Provider value={{OpenAddBookmark, OpenBookmark}}>
             <HighlightsContext.Provider value={[highlights, setHighlights]}>

@@ -48,7 +48,7 @@ function GetVerbosityClass(verb) {
     return rtn ? rtn : "";
 }
 
-function RenderDeltaTime(delta) {
+export function RenderDeltaTime(delta) {
 
 
     const ms = delta % 1000;
