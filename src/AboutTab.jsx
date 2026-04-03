@@ -25,6 +25,10 @@ Version v${AppVersion}
 
 ## Changelog
 
+*4/3/2026 v0.3.0*
+- Add option to not merge omitted lines
+- Add synced hover-highlight across neighboring splits 
+
 *2/8/2025 v0.2.0*
 - Add ability to open multiple files
 - Add ability to open Annotated files with the regular "open" option (with warning)

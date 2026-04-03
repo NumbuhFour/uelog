@@ -112,7 +112,13 @@ export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentPart
                 { BookmarkBtn }
                 { getConfig('showLineNumber',true) && <span className="number"> {contentParts.linenumber} </span> }
                 <a className="lineTooltip" data-tooltip-variant="light" data-tooltip-content={contentParts.message} data-tooltip-delay-show={670} >
-                    <span className="message"> - </span>
+                    { ((getConfig('showTimestamp',true) && contentParts.timestamp) || getConfig('debugLine',false)) && (
+                        <span className={["timestamp", getConfig('contrastMessage', true)?'greyout':''].join(' ')}>[{getConfig('timestampAsDelta',true) ? RenderDeltaTime(contentParts.timefromstart) : contentParts.timestamp}]</span>
+                    )}
+                    { ((getConfig('showFrame',true) && contentParts.frame) || getConfig('debugLine', false)) && (<span className={["frame", getConfig('contrastMessage',true)?'greyout':''].join(' ')}>[{contentParts.frame?.trim().toString().padStart(3,' ')}]</span>)}
+                    { ((contentParts.category) || getConfig('debugLine', false)) && (<><span style={getConfig('colorCategories',true) ? {color:generateColorFromLogCat(contentParts.category)}:{}} className={["category", getConfig('contrastMessage',true)?'greyout':'', contentParts.category].join(' ')}>{contentParts.category}: </span></>)}
+                    { ((contentParts.verbosity) || getConfig('debugLine',false)) && (<><span className={["verbosity", contentParts.verbosity, getConfig('contrastMessage',true)?'greyout':''].join(' ')}>{contentParts.verbosity}: </span></>)}
+                    { ((contentParts.message) || getConfig('debugLine',false)) && (<span className="message">{contentParts.message}</span>)}
                 </a>
             </>)}
         </div>
