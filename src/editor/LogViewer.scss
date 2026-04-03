@@ -17,6 +17,12 @@
         color: #444;
         background-color: #111;
     }
+    &.omit {
+        color: #444;
+        div, span {
+            color: #444 !important;
+        }
+    }
     &:not(.nobg) {
 
         &.even {

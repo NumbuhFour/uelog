@@ -95,8 +95,15 @@ export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentPart
             </>)}
             { contentParts.type == 'concat' && (<>
                 <span className="text">
-                    - {contentParts.numlines} lines omitted -
+                    - {contentParts.numlines} line{contentParts.numlines == 1 ? '':'s'} omitted -
                 </span>
+            </>)}
+            { contentParts.type == 'omit' && (<>
+                { BookmarkBtn }
+                { getConfig('showLineNumber',true) && <span className="number"> {contentParts.linenumber} </span> }
+                <a className="lineTooltip" data-tooltip-variant="light" data-tooltip-content={contentParts.message} data-tooltip-delay-show={670} >
+                    <span className="message"> - </span>
+                </a>
             </>)}
         </div>
     );

@@ -73,6 +73,7 @@ const GlobalConfigDefault = {
   colorCategories: true,
   contrastMessage: true,
   showOmissions: true,
+  mergeOmissions: true,
 }
 
 const DefaultSavedFilters = [
@@ -618,6 +619,7 @@ ${savedfile}
         { label: <span>{globalConfig.timestampAsDelta ? "☑":"☐"} Timestamp as from Start</span>, action: () => { setConfigAttribute('timestampAsDelta', !globalConfig.timestampAsDelta); return true; } },
         { label: <span>{globalConfig.showFrame ? "☑":"☐"} Show Frame Numbers</span>, action: () => { setConfigAttribute('showFrame', !globalConfig.showFrame); return true; } },
         { label: <span>{globalConfig.showOmissions ? "☑":"☐"} Show Omissions </span>, action: () => { setConfigAttribute('showOmissions', !globalConfig.showOmissions); return true; } },
+        { label: <span disabled={!globalConfig.showOmissions}>{globalConfig.mergeOmissions ? "☑":"☐"} Merge Omissions </span>, action: () => { setConfigAttribute('mergeOmissions', !globalConfig.mergeOmissions); return true; } },
         { label: <span>{globalConfig.colorCategories ? "☑":"☐"} Color Categories </span>, action: () => { setConfigAttribute('colorCategories', !globalConfig.colorCategories); return true; } },
         { label: <span>{globalConfig.contrastMessage ? "☑":"☐"} Contrast Message</span>, action: () => { setConfigAttribute('contrastMessage', !globalConfig.contrastMessage); return true; } },
       ],

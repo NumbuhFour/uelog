@@ -144,7 +144,7 @@ export const LogViewerPage = (props) => {
       items: [
         { label: <span> Save Filtered </span>, action: () => {
           // dump text to console
-          const filtered = GetFilteredLines(allFiles[file].lines, null, true)
+          const filtered = GetFilteredLines(allFiles[file].lines, null, true, true)
           MakeSavePromptWindow(dockLayoutContext, filtered.lines, file)
         } },
       ],
@@ -209,7 +209,7 @@ export const LogViewerPage = (props) => {
     setLogCategories([''].concat(Object.keys(logCategoryCounts).sort()))
   }
 
-  const GetFilteredLines = (alllines, inStats, showOmissions) => {
+  const GetFilteredLines = (alllines, inStats, showOmissions, mergeOmissions) => {
     let concatenationInd = 0;
     const outLines = alllines.reduce((acc, line, ind) => {
 
@@ -226,7 +226,7 @@ export const LogViewerPage = (props) => {
 
       if (matches) {
         const delta = ind - concatenationInd;
-        if (delta > 1 && showOmissions) {
+        if (delta > 1 && showOmissions && mergeOmissions) {
           acc.push({
             type:"concat",
             numlines: delta
@@ -234,6 +234,12 @@ export const LogViewerPage = (props) => {
         }
         acc.push(line)
         concatenationInd = line.linenumber
+      }
+      else if (!mergeOmissions){
+        acc.push({
+          ...line,
+          type:"omit",
+        })
       }
       return acc;
     }, [])
@@ -246,7 +252,7 @@ export const LogViewerPage = (props) => {
 
     let concatenationInd = 0;
     let statisticsCopy = JSON.parse(JSON.stringify(StatisticsDefault))
-    const filtered = GetFilteredLines(allFiles[file].lines, statisticsCopy, globalConfigContext.showOmissions)
+    const filtered = GetFilteredLines(allFiles[file].lines, statisticsCopy, globalConfigContext.showOmissions, globalConfigContext.mergeOmissions)
     concatenationInd = filtered.concatenationInd;
     setLines(filtered.lines)
 

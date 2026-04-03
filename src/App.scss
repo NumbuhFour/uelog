@@ -183,6 +183,7 @@ body {
       box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
       z-index: 1;
       width: 200px;
+      user-select: none;
       .option {
         margin-bottom: -1px;
         border: 1px solid #ccc;
@@ -190,6 +191,10 @@ body {
         padding: 5px 10px;
         cursor: pointer;
 
+        span[disabled] {
+          color: gray;
+          pointer-events: none;
+        }
         &:hover {
           background-color: $nav-bg-hover;
         }
