@@ -61,6 +61,12 @@
                 }
             }
         }
+        &.hover:not(.nohover):not(:hover) {
+            background-color: darken($line-hover-bg, 10%);
+            .message {
+                background-color: darken($line-hover-bg, 10%);
+            }
+        }
 
         &.flash, &.BOOKMARK, &.SEARCH_FOCUS, &.SYNCHOVER {
             animation: grow-shrink 0.3s ease-in-out;

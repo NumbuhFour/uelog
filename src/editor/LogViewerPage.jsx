@@ -72,6 +72,8 @@ export const LogViewerPage = (props) => {
   const [ lines, setLines ] = useState( (allFiles && file in allFiles) ? allFiles[file].lines:[] );
   const [ searchLines, setSearchLines ] = useState([]);
 
+  const [ hoveredLine, setHoveredLine ] = useState(undefined);
+  
   const UpdateSearchLines = () => {
     clearTimeout(SearchRateLimit.handle)
 
@@ -123,6 +125,7 @@ export const LogViewerPage = (props) => {
   }
   useEffect(() => {
     tabData.NeighborScroll = NeighborScroll;
+    tabData.NeighborHover = NeighborHover;
     tabData.ForceUpdate = () => {
       listRef.current?.forceUpdate()
     }
@@ -178,7 +181,13 @@ export const LogViewerPage = (props) => {
 
   const Row = ({ index, style }) => (
     //<div key={key} style={style} > LINE {index} </div>
-    <LogViewerLine style={style} config={{ ...globalConfigContext, ...config }} contentParts={lines[index]} />
+    <LogViewerLine 
+        style={style} 
+        config={{ ...globalConfigContext, ...config }} 
+        contentParts={lines[index]} 
+        hovered={lines[index].linenumber==hoveredLine && hoveredLine}
+        onHover={(hovered,e)=>
+            onLineHovered(lines[index].linenumber,hovered,e)}/>
   )
 
   /*const longestLine = lines.reduce((acc,iter) => {
@@ -301,6 +310,25 @@ export const LogViewerPage = (props) => {
         }
       }
   }
+  
+  const onLineHovered = (line, hovered, e) => {
+    if (hovered)
+      setHoveredLine(line)
+    else if (line == hoveredLine)
+      setHoveredLine(undefined)
+    
+    const neighbors = GetNeighboringPanelsForTab(dockLayoutContext.getLayout(), id);
+    if (neighbors)
+      for (var n of neighbors) {
+        if (n)
+          for (var t of n?.tabs) {
+            if (t.fileName == file && t?.NeighborHover)
+            {
+              t.NeighborHover(line)
+            }
+          }
+      }
+  }
 
   const updateFile = (filename, value) => {
     setAllFiles(old => {
@@ -331,8 +359,12 @@ export const LogViewerPage = (props) => {
     forceMove = false;
     //listRef.current.forceUpdate();
   }
+  const NeighborHover = (line) => {
+    setHoveredLine(line)
+  }
   useEffect(() => {
     tabData.NeighborScroll = NeighborScroll;
+    tabData.NeighborHover = NeighborHover;
     tabData.ForceUpdate = () => {
       listRef.current?.forceUpdate()
     }

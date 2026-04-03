@@ -20,6 +20,12 @@ export const SavePrompt = (props) => {
             if (l.type == "concat" && save_omissions) {
                 out.push(` - ${l.numlines} lines omitted -`)
             }
+            if (l.type == "omit" && save_omissions) {
+                let line = ""
+                if (save_numbers) line += `${l.number}\t`
+                line += ` - `
+                out.push(line)
+            }
             else if (l.type == "line") {
                 let line = ""
                 if (save_numbers) line += `${l.number}\t`

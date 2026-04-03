@@ -65,11 +65,20 @@ export function RenderDeltaTime(delta) {
     return out;
 }
 
-export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentParts, BookmarkBtn, classes}) => {
-
+export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentParts, BookmarkBtn, classes, hovered, onHover}) => {
+    
+    const onMouseEnter = (e) => {
+        if (onHover) onHover(true, e)
+    }
+    const onMouseExit = (e) => {
+        if (onHover) onHover(false, e)
+    }
 
     return (
-        <div key={key} className={[
+        <div key={key}
+             onMouseEnter={onMouseEnter}
+             onMouseLeave={onMouseExit}
+             className={[
                 "line",
                 GetVerbosityClass(contentParts.verbosity),
                 getConfig('alternatingBackground', true) ? (contentParts.linenumber % 2 == 0 ? "even":"odd"):'',
@@ -77,6 +86,7 @@ export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentPart
                 getConfig('nohover', false) ? "nohover":"",
                 getConfig('nobg', false) ? "nobg":"",
                 classes,
+                hovered ? "hover":"",
             ].join(' ')}
             style={style}>
             { contentParts.type == 'line' && (<>
@@ -109,7 +119,7 @@ export const LogViewerLineRender = ({ key, myFile, getConfig, style, contentPart
     );
 }
 
-export const LogViewerLine = ({ key, config, contentParts, style }) => {
+export const LogViewerLine = ({ key, config, contentParts, style, hovered, onHover}) => {
 
     const { myFile, setMyFile } = useContext(MyFilesContext);
     const { OpenBookmark, OpenAddBookmark } = useContext(BookmarkFunctionsContext);
@@ -137,6 +147,6 @@ export const LogViewerLine = ({ key, config, contentParts, style }) => {
     }
 
     return (
-        <LogViewerLineRender key={key} myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts} classes={GetHighlightClasses(highlights, contentParts, myFile)}/>
+        <LogViewerLineRender key={key} hovered={hovered} onHover={onHover} myFile={myFile} style={style} getConfig={getConfig} BookmarkBtn={Bookmark()} contentParts={contentParts} classes={GetHighlightClasses(highlights, contentParts, myFile)}/>
     )
 };
